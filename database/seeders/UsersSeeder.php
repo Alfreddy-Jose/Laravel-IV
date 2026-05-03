@@ -23,7 +23,7 @@ class UsersSeeder extends Seeder
                 'password' => Hash::make('12345678'),
             ]
         );
-        $administrador->assignRole('ADMINISTRADOR');
+        $administrador->assignRole('Administrador');
 
         // Usuario Asistente
 /*         $asistente = User::firstOrCreate(

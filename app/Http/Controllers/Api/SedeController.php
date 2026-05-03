@@ -1,38 +1,32 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
-use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSedeRequest;
 use App\Http\Requests\UpdateSedeRequest;
+use App\Http\Controllers\Controller; 
+use Illuminate\Http\Request;
+use App\Models\Sede;
 use App\Models\Estado;
 use App\Models\Municipio;
 use App\Models\Pnf;
-use App\Models\Sede;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Request;
+use App\Models\Universidad;
 use Illuminate\Support\Facades\DB;
+
 
 class SedeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+     public function index()
     {
         // Obtener todas las sedes
-        $sedes = Sede::/* :with('municipio:municipio,id_municipio', 'pnfs:id,nombre') */
-            select('id', 'nro_sede', 'nombre_sede', 'nombre_abreviado', 'direccion', 'municipio_id')
-            ->get();
+        $sedes = Sede::with('municipio:municipio,id_municipio', 'pnfs:id,nombre')
+            ->select('id', 'nro_sede', 'nombre_sede', 'nombre_abreviado', 'direccion', 'municipio_id')
+            ->get(); 
 
         // Enviando datos a la api
         return response()->json($sedes);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreSedeRequest $request)
+        public function store(StoreSedeRequest $request)
     {
         $sede = Sede::create($request->validated());
 
@@ -42,7 +36,7 @@ class SedeController extends Controller
         }
 
         // Enviando respuesta al frontend
-        return response()->json(['message' => 'Sede Registrada']);
+        return response()->json(['message' => 'Sede creada exitosamente']);
     }
 
     /**
@@ -51,7 +45,7 @@ class SedeController extends Controller
     public function show(Sede $sede)
     {
         // Cargando relaciones con municipios
-        // Y con PNF
+        // Y con PNF 
             $sede->load(['municipio' => function ($query) {
             $query->select('id_municipio', 'municipio', 'id_estado')
                 ->with(['estado' => function ($query) {
@@ -130,32 +124,7 @@ class SedeController extends Controller
         }
     }
 
-    public function getPnf()
-    {
-        $pnf = Pnf::select('id', 'nombre')->get();
-
-        return response()->json($pnf);
-    }
-
-    public function getPnfSede(Sede $sede)
-    {
-        $carrerasAsignadas = $sede->pnfs()->select('pnfs.id', 'pnfs.nombre')->get();
-
-        return response()->json($carrerasAsignadas);
-    }
-
-    public function generaPDF()
-    {
-        // Obtener todas las sedes
-        $sedes = Sede::with('municipio:municipio,id_municipio')
-            ->select('id', 'nro_sede', 'nombre_sede', 'nombre_abreviado', 'direccion', 'municipio_id')
-            ->get();
-
-        $pdf = Pdf::loadView('pdf.sedes', compact('sedes'));
-
-        return $pdf->download('sedes.pdf');
-    }
-
+    // funcion para traer los estados
     public function getEstados()
     {
         $estados = Estado::all();
@@ -163,11 +132,31 @@ class SedeController extends Controller
         return response()->json($estados);
     }
 
+    // Función para Traer los Municipios segun el Estado Seleccionado
     public function getMunicipios($estado)
     {
-        // traer todos los municipios de un estado
+        // traer todos los municipios de un estado 
         $municipios = Municipio::where('id_estado', $estado)->get();
 
         return response()->json($municipios);
+    }
+
+        public function getUniversidad()
+    {
+        $universidad = Universidad::first(); // Usar first() en lugar de get()
+
+        if (!$universidad) {
+            return response()->json(['message' => 'No se encontró información de la universidad'], 404);
+        }
+
+        return response()->json($universidad);
+    }
+
+    // Función para traer los PNFS
+     public function getPnf()
+    {
+        $pnf = Pnf::select('id', 'nombre')->get();
+
+        return response()->json($pnf);
     }
 }
