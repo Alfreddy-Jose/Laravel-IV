@@ -17,6 +17,39 @@ class RolesController extends Controller
         return response()->json($roles);
     }
 
+
+        public function getRolesWithPermissions()
+    {
+        $roles = Role::with('permissions')->get()->map(function ($role) {
+            $groupedPermissions = [];
+
+            foreach ($role->permissions as $permission) {
+                // Dividimos el permiso en módulo y acción
+                $parts = explode('.', $permission->name);
+
+                if (count($parts) === 2) {
+                    $module = $parts[0];
+                    $action = $parts[1];
+
+                    if (!isset($groupedPermissions[$module])) {
+                        $groupedPermissions[$module] = [];
+                    }
+
+                    $groupedPermissions[$module][] = [
+                        'full_name' => $permission->name,
+                        'action' => $action,
+                        'id' => $permission->id
+                    ];
+                }
+            }
+
+            $role->groupedPermissions = $groupedPermissions;
+            return $role;
+        });
+
+        return response()->json($roles);
+    }
+
     /**
      * Store a newly created resource in storage.
      */

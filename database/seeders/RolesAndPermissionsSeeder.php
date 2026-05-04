@@ -14,8 +14,7 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
-        // Crear Permisos
-
+        
         // Permisos de Usuario
         Permission::firstOrCreate(['name' => 'usuario.crear']);
         Permission::firstOrCreate(['name' => 'usuario.editar']);
@@ -28,7 +27,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'rol.ver']);
 
         //  Crear rol de super-admin
-        $adminRole = Role::firstOrCreate(['name' => 'ADMINISTRADOR']);
+        $adminRole = Role::firstOrCreate(['name' => 'Administrador']);
         // Asignar todos los permisos al rol de super-admin
         $adminRole->givePermissionTo(Permission::all());
     }
