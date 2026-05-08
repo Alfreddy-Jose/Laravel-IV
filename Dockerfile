@@ -29,9 +29,7 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache \
     && chmod -R 777 /var/www/html/storage/framework/ \
-    && chmod 775 /var/www/html/storage/app/public/ \
-    # && mkdir -p /var/www/html/storage/app/public/avatars \
-    # && chmod 775 /var/www/html/storage/app/public/avatars
+    && chmod 775 /var/www/html/storage/app/public
 
 # Expone el puerto 8000
 EXPOSE 8000
