@@ -31,4 +31,10 @@ class Pnf extends Model
     {
         return $this->belongsToMany(Sede::class);
     }
+
+    // Relación mucho a muchos con el modelo trayectos
+    public function trayectos()
+    {
+        return $this->belongsToMany(Trayecto::class, 'pnf_trayecto');
+    }
 }

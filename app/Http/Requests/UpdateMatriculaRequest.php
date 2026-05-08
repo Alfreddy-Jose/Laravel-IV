@@ -12,7 +12,7 @@ class UpdateMatriculaRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,15 @@ class UpdateMatriculaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            "nombre" => "required|unique:matriculas,nombre," . $this->route('matricula')->id,
         ];
     }
-}
+
+    public function messages()
+    {
+        return [
+            "required" => "El campo :attribute es requerido",
+            "numero.unique" => "El campo número ya ha sido registrado",
+            "integer" => "El campo :attribute debe ser un número entero"
+        ];
+    }}

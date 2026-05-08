@@ -7,13 +7,14 @@ use App\Http\Controllers\Api\PnfController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\LapsoAcademicoController;
 use App\Http\Controllers\Api\MatriculaController;
+use App\Http\Controllers\Api\TrayectoController;
 use Illuminate\Support\Facades\Route;
 
 
 Route::post('/login', [AuthController::class, 'login']); 
 
 // Rutas protegidas por middleware de Sanctum
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->group(function () { 
 
     // Rutas de Usuarios 
     Route::get('/user', [AuthController::class, 'user']); 
@@ -23,10 +24,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/{user}', [UserController::class, 'update']);    
     Route::delete('/user/{user}', [UserController::class, 'destroy']);
     Route::get('/get_roles', [UserController::class, 'getRoles']);
+    Route::post('/logout', [AuthController::class, 'logout']);
     
     // Rutas de Roles
     Route::get('/roles', [RolesController::class, 'index']);
     Route::post('/roles', [RolesController::class, 'store']);
+    Route::put('/rol/{rol}', [RolesController::class, 'update']);
     Route::get('/roles_permisos', [RolesController::class, 'getRolesWithPermissions']);
 
     // Rutas de Pnfs
@@ -83,5 +86,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/matricula', [MatriculaController::class, 'store']);
     Route::put('/matricula/{matricula}', [MatriculaController::class, 'update']);
     Route::delete('/matricula/{matricula}', [MatriculaController::class, 'destroy']);
+
+    // Rutas de Trayectos
+    Route::get('/trayectos', [TrayectoController::class, 'index']);
+    Route::get('/trayecto/{trayecto}', [TrayectoController::class, 'show']);
+    Route::post('/trayecto', [TrayectoController::class, 'store']);
+    Route::put('/trayecto/{trayecto}', [TrayectoController::class, 'update']);
+    Route::delete('/trayecto/{trayecto}', [TrayectoController::class, 'destroy']);
     
 });

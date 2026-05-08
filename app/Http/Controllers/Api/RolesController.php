@@ -81,9 +81,21 @@ class RolesController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Role $rol)
     {
-        //
+        $request->validate([
+            'nombre' => 'required|string|unique:roles,name,' . $rol->id,
+            'permisos' => 'required|array',
+            'permisos.*' => 'string|exists:permissions,name',
+        ]);
+        // Actualizando rol
+        $rol->name = $request->nombre;
+        $rol->save();
+
+        // Sincroniza los permisos
+        $rol->syncPermissions($request->permisos);
+
+        return response()->json(['message' => 'Rol Editado'], 200);
     }
 
     /**

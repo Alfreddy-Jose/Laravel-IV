@@ -47,4 +47,16 @@ class AuthController extends Controller
             'user' => $request->user()
         ]);
     }
+
+    public function logout(Request $request)
+    {
+        try {
+            // Revocar el token actual
+            $request->user()->Tokens()->delete();
+
+            return response()->json(['message' => 'Sesión cerrada correctamente'], 200);
+        } catch (\Exception $th) {
+            return response()->json(['message' => 'Error del token', 'error' => $th], 400);
+        }
+    }
 }
