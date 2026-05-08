@@ -10,22 +10,26 @@ use App\Http\Controllers\Api\MatriculaController;
 use App\Http\Controllers\Api\TrayectoController;
 use Illuminate\Support\Facades\Route;
 
+// Ruta para probar
+Route::get('/', function () {
+    return 'Hello World';
+});
 
-Route::post('/login', [AuthController::class, 'login']); 
+Route::post('/login', [AuthController::class, 'login']);
 
 // Rutas protegidas por middleware de Sanctum
-Route::middleware('auth:sanctum')->group(function () { 
+Route::middleware('auth:sanctum')->group(function () {
 
-    // Rutas de Usuarios 
-    Route::get('/user', [AuthController::class, 'user']); 
+    // Rutas de Usuarios
+    Route::get('/user', [AuthController::class, 'user']);
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/user/create', [UserController::class, 'store']);
     Route::get('/user/{user}', [UserController::class, 'show']);
-    Route::put('/user/{user}', [UserController::class, 'update']);    
+    Route::put('/user/{user}', [UserController::class, 'update']);
     Route::delete('/user/{user}', [UserController::class, 'destroy']);
     Route::get('/get_roles', [UserController::class, 'getRoles']);
     Route::post('/logout', [AuthController::class, 'logout']);
-    
+
     // Rutas de Roles
     Route::get('/roles', [RolesController::class, 'index']);
     Route::post('/roles', [RolesController::class, 'store']);
@@ -35,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rutas de Pnfs
     Route::get('/pnfs', [PnfController::class, 'index']);
     Route::post('/pnf', [PnfController::class, 'store']);
-    Route::get('/pnf/{pnf}', [PnfController::class, 'show']);   
+    Route::get('/pnf/{pnf}', [PnfController::class, 'show']);
     Route::put('/pnf/{pnf}', [PnfController::class, 'update']);
     Route::delete('/pnf/{pnf}', [PnfController::class, 'destroy']);
 
@@ -55,7 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // 1. Rutas de Colección (Plural)
     Route::get('/sedes', [SedeController::class, 'index']);
 
-    // 2. Rutas de Utilidad/Datos (Específicas) 
+    // 2. Rutas de Utilidad/Datos (Específicas)
     // Siempre van ANTES de las que tienen parámetros dinámicos
     Route::get('/sede/getPnf', [SedeController::class, 'getPnf']);
     Route::get('/sede/getUniversidad', [SedeController::class, 'getUniversidad']);
@@ -93,5 +97,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/trayecto', [TrayectoController::class, 'store']);
     Route::put('/trayecto/{trayecto}', [TrayectoController::class, 'update']);
     Route::delete('/trayecto/{trayecto}', [TrayectoController::class, 'destroy']);
-    
+
 });
