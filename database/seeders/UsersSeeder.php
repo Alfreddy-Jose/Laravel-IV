@@ -25,6 +25,16 @@ class UsersSeeder extends Seeder
         );
         $administrador->assignRole('Administrador');
 
+        $nelmarhys = User::firstOrCreate(
+            ['email' => 'nelmarhys@gmail.com'],
+            [
+                'name' => 'Nelmarhys',
+                'lastname' => 'Jaimes',
+                'password' => Hash::make('123456'),
+            ]
+        );
+        $nelmarhys->assignRole('Administrador');
+
         // Usuario Asistente
 /*         $asistente = User::firstOrCreate(
             ['email' => 'ROMULO@GMAIL.COM'],

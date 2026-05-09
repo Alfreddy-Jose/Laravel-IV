@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\TrayectoController;
 use Illuminate\Support\Facades\Route;
 
 // Ruta para probar
-Route::get('/', function () {
+Route::get('/welcom', function () {
     return 'Hello World';
 });
 
