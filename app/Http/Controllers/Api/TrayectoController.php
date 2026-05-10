@@ -38,26 +38,26 @@ class TrayectoController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Trayecto $trayecto)
+/*    public function show(Trayecto $trayecto)
     {
         return response()->json($trayecto);
     }
-
+*/
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $trayecto)
-    {
-        $request->validate([
-            'nombre' => 'required|string|unique:trayectos,nombre'
-        ]);
-        // editar trayecto validado
-        $trayecto = Trayecto::findOrFail($trayecto);
-        $trayecto->update($request->all());
+    // public function update(Request $request, string $trayecto)
+    // {
+    //     $request->validate([
+    //         'nombre' => 'required|string|unique:trayectos,nombre'
+    //     ]);
+    //     // editar trayecto validado
+    //     $trayecto = Trayecto::findOrFail($trayecto);
+    //     $trayecto->update($request->all());
         
-        return response()->json(['message' => 'Trayecto ediado exitosamente'], 201);
+    //     return response()->json(['message' => 'Trayecto ediado exitosamente'], 201);
         
-    }
+    // }
 
     /**
      * Remove the specified resource from storage.
