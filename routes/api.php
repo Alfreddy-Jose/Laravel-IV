@@ -93,9 +93,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas de Trayectos
     Route::get('/trayectos', [TrayectoController::class, 'index']);
-    Route::get('/trayecto/{trayecto}', [TrayectoController::class, 'show']);
+    // Route::get('/trayecto/{trayecto}', [TrayectoController::class, 'show']);
     Route::post('/trayecto', [TrayectoController::class, 'store']);
-    Route::put('/trayecto/{trayecto}', [TrayectoController::class, 'update']);
+    // Route::put('/trayecto/{trayecto}', [TrayectoController::class, 'update']);
     Route::delete('/trayecto/{trayecto}', [TrayectoController::class, 'destroy']);
 
 });
