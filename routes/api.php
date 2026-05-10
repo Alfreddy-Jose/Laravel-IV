@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\LapsoAcademicoController;
 use App\Http\Controllers\Api\MatriculaController;
 use App\Http\Controllers\Api\TrayectoController;
+use App\Http\Controllers\Api\PersonaController;
 use Illuminate\Support\Facades\Route;
 
 // Ruta para probar
@@ -43,18 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/pnf/{pnf}', [PnfController::class, 'update']);
     Route::delete('/pnf/{pnf}', [PnfController::class, 'destroy']);
 
-    // Rutas de Sedes
-/*    Route::get('/sedes', [SedeController::class, 'index']);
-    Route::post('/sede', [SedeController::class, 'store']);
-    Route::get('/sede/getPnf', [SedeController::class, 'getPnf']);
-    Route::get('/sede/getUniversidad', [SedeController::class, 'getUniversidad']);
-    Route::get('/sede/getEstados', [SedeController::class, 'getEstados']);
-    Route::get('/sede/getMunicipios/{estado}', [SedeController::class, 'getMunicipios']);
-    Route::get('/sede/{sede}', [SedeController::class, 'show']);
-    Route::put('/sede/{sede}', [SedeController::class, 'update']);
-    Route::delete('/sede/{sede}', [SedeController::class, 'destroy']);*/
-
-        // --- RUTAS DE SEDES ---
+    // --- RUTAS DE SEDES ---
 
     // 1. Rutas de Colección (Plural)
     Route::get('/sedes', [SedeController::class, 'index']);
@@ -97,5 +87,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/trayecto', [TrayectoController::class, 'store']);
     // Route::put('/trayecto/{trayecto}', [TrayectoController::class, 'update']);
     Route::delete('/trayecto/{trayecto}', [TrayectoController::class, 'destroy']);
+
+    // Rutas de Personas
+    Route::get('/personas', [PersonaController::class, 'index']);
+    Route::get('/persona/get_pnf', [PersonaController::class, 'getPnf']);
+    Route::post('/persona', [PersonaController::class, 'store']);
+    Route::get('/persona/{persona}', [PersonaController::class, 'show']);
+    Route::put('/persona/{persona}', [PersonaController::class, 'update']);
+    Route::delete('/persona/{persona}', [PersonaController::class, 'destroy']);
 
 });
