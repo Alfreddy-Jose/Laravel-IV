@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class SedeController extends Controller
 {
-     public function index()
+    public function index()
     {
         // Obtener todas las sedes
         $sedes = Sede::with('municipio:municipio,id_municipio', 'pnfs:id,nombre')
@@ -26,7 +26,8 @@ class SedeController extends Controller
         return response()->json($sedes);
     }
 
-        public function store(StoreSedeRequest $request)
+    // Metodo para crear una nueva sede
+    public function store(StoreSedeRequest $request)
     {
         $sede = Sede::create($request->validated());
 

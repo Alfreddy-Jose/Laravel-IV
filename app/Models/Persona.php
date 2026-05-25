@@ -17,6 +17,7 @@ class Persona extends Model
         'grado_inst',
         'municipio_id',
     ];
+    
     // Relación con el modelo Tipo_persona
 /*     public function tipo_persona()
     {
@@ -24,10 +25,10 @@ class Persona extends Model
     } */
 
     // Relacion con el modelo Docente
-/*    public function docente()
+    public function docente()
     {
         return $this->hasOne(Docente::class);
-    }*/
+    }
 
     // Relacion con el modelo Vocero
 /*    public function vocero()

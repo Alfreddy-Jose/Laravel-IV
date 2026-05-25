@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Http\Requests\StorePnfRequest;
-use App\Http\Requests\UpdatePnfRequest;
+use App\Http\Requests\StorePersonaRequest;
+use App\Http\Requests\UpdatePersonaRequest;
 use Illuminate\Support\Facades\DB;
 use App\Models\Persona;
 use App\Models\Pnf;
@@ -36,7 +36,7 @@ class PersonaController extends Controller
      */
     public function store(StorePersonaRequest $request)
     {
-        try{
+        try{ 
             DB::beginTransaction();
 
             // Gardando los registros
@@ -83,7 +83,7 @@ class PersonaController extends Controller
         $persona->update($request->all());
 
         // Enviando respuesta al frontend
-        return response()->json(['message' => 'Persona Editada']);
+        return response()->json(['message' => 'Persona editada exitosamente']);
     }
 
     /**
@@ -101,7 +101,7 @@ class PersonaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Persona Eliminada'
+                'message' => 'Persona eliminada exitosamente'
             ], 200);
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
@@ -129,14 +129,6 @@ class PersonaController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
-
-    // Metodo para obtener las Personas
-    public function getPnf()
-    {
-        $pnfs = Pnf::select('id', 'nombre')->get();
-
-        return response()->json($pnfs);
     }
 
 /*    public function generarPDF(Request $request)

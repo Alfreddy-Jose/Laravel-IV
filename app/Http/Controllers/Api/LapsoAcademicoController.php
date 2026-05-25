@@ -37,7 +37,7 @@ class LapsoAcademicoController extends Controller
         $lapsos = LapsoAcademico::with('tipolapso')->where('status', true)->get();
 
         // Retornando los datos al Frontend
-        return response()->json($lapsos);
+        return response()->json($lapsos); 
     }
 
     /**
@@ -53,7 +53,7 @@ class LapsoAcademicoController extends Controller
     }
 
     /**
-     * Display the specified resource. 
+     * Display the specified resource.
      */
     public function show(LapsoAcademico $lapso_academico)
     {
@@ -122,6 +122,6 @@ class LapsoAcademicoController extends Controller
     {
         $tipoLapsos = TipoLapso::select('id', 'nombre')->get();
 
-        return response()->json($tipoLapsos); 
+        return response()->json($tipoLapsos);
     }
 }

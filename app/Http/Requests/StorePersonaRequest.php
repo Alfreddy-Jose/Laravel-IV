@@ -12,7 +12,7 @@ class StorePersonaRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,19 @@ class StorePersonaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            "cedula_persona" => "required|numeric|unique:personas,cedula_persona",
+            "nombre" => "required|string",
+            "apellido" => "required|string",
+            "email" => "email|unique:personas,email",
+            "direccion" => "max:255|nullable",
+            "telefono" => "numeric|unique:personas,telefono"
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            "cedula_persona.unique" => "La cédula ingresada ya se encuentra registrada",
         ];
     }
 }

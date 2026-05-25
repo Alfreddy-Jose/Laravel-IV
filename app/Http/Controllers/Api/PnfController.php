@@ -20,12 +20,13 @@ class PnfController extends Controller
         // Si no hay registros, devuelve un array vacío para que el frontend lo maneje
         if ($pnf->isEmpty()) {
             return response()->json([], 200);
-        }
+        } 
 
         // Enviar a la vista del listado de PNF con la variable
         return response()->json($pnf, 200);
     }
 
+    // Metodo para crear un nuevo pnf
     public function store(StorePnfRequest $request)
     {
         try {
@@ -44,8 +45,13 @@ class PnfController extends Controller
                 // 'logo' => $logoPath,
             ]);
 
+            // si hay trayectos se asocian al pnf
+            if ($request->has('trayectos_id')) {
+                $pnf->trayectos()->sync($request->trayectos_id);
+            }
+
             return response()->json([
-                "message" => "PNF creado exitosamente",
+                "message" => "Pnf creado exitosamente",
                 "pnf" => $pnf
             ], 200);
         } catch (\Exception $e) {
@@ -61,6 +67,10 @@ class PnfController extends Controller
      */
     public function show(Pnf $pnf)
     {
+        $pnf->load(['trayectos' => function ($query) {
+            $query->select('trayecto_id', 'nombre');
+        }]);
+
         return response()->json($pnf, 200);
     }
 
@@ -100,10 +110,15 @@ class PnfController extends Controller
                 'abreviado_coord' => $request['abreviado_coord'],
             ]);
 
+            // asignar trayectos al pnf
+            if ($request->has('trayectos_id')) {
+                $pnf->trayectos()->sync($request->trayectos_id);
+            }
+
             DB::commit();
 
             return response()->json([
-                'message' => 'PNF editado exitosamente',
+                'message' => 'Pnf editado exitosamente',
                 'pnf' => $pnf
             ], 200);
 
@@ -130,7 +145,7 @@ class PnfController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'PNF eliminado exitosamente'
+                'message' => 'Pnf eliminado exitosamente'
             ], 200);
 
         } catch (\Illuminate\Database\QueryException $e) {

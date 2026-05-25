@@ -10,8 +10,9 @@ use App\Http\Requests\StoreUserRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
-
+use Illuminate\Support\Facades\DB;
 use function Illuminate\Log\log;
+
 
 class UserController extends Controller
 {
@@ -22,7 +23,7 @@ class UserController extends Controller
     {
         try {
             $users = User::with('roles:id,name')
-                ->select('id', 'name', 'lastname', 'email',)
+                ->select('id', 'name', 'email')
                 ->get()
                 ->map(function ($user) {
                     // Si solo tiene un rol, puedes tomar el primero
@@ -45,10 +46,8 @@ class UserController extends Controller
     {
         try {
             // Crear el usuario
-            Log::info('informacion recibida en el backend:', array($request->lastname));
             $user = User::create([
                 'name' => $request['name'],
-                'lastname' => $request['lastname'],
                 'email' => $request['email'],
                 'password' => Hash::make($request['password'])
             ]);
@@ -79,7 +78,7 @@ class UserController extends Controller
     public function show($usuario)
     {
         $user = User::with('roles:id,name')
-            ->select('id', 'name', 'lastname', 'email')
+            ->select('id', 'name', 'email')
             ->findOrFail($usuario);
 
         // Si solo tiene un rol, puedes tomar el primero
@@ -154,8 +153,62 @@ class UserController extends Controller
 
     // Metodo para obtener los roles
     public function getRoles()
-    {   
+    {
         $roles = Role::select('id', 'name')->get();
         return response()->json($roles);
+    }
+
+
+    public function getUserPermissions($userId)
+    {
+
+
+        $user = User::where('id', $userId)->firstOrFail();
+
+        // Todos los permisos combinados que el usuario posee actualmente
+        $allPermissions = $user->getAllPermissions()->pluck('name')->toArray();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'all_permissions' => $allPermissions,
+            ]
+        ], 200);
+    }
+
+    /**
+     * Sincroniza únicamente los permisos directos (específicos) del usuario.
+     */
+    public function updateUserPermissions(Request $request, User $userId)
+    {
+        // Validamos que venga un array llamado 'permisos' (tal como lo configuramos en React)
+        $request->validate([
+            'permisos' => 'present|array',
+            'permisos.*' => 'string|exists:permissions,name',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $userId->syncPermissions($request->permisos);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Permisos específicos de {$userId->name} actualizados correctamente.",
+                'data' => $userId->getDirectPermissions()->pluck('name')
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al sincronizar los permisos del usuario.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

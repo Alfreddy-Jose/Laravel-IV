@@ -27,7 +27,8 @@ class StorePnfRequest extends FormRequest
             'nombre' => 'required|string',
             'abreviado' => 'required|string|min:4',
             'abreviado_coord' => 'required|string|min:3',
-            'logo' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048'
+            "trayectos_id" => "required|required|exists:trayectos,id",
+            // 'logo' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048'
         ];
     }
 

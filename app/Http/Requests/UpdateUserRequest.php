@@ -27,7 +27,6 @@ class UpdateUserRequest extends FormRequest
 
         return [
             'name' => 'required|string|max:255|regex:/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/',
-            'lastname' => 'required|string|max:255|regex:/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/',
             'email' => [
                 'required',
                 'email',

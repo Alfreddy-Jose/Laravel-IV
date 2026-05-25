@@ -16,7 +16,7 @@ return new class extends Migration
             $table->bigInteger('cedula_persona')->unique();
             $table->string('nombre');
             $table->string('apellido');
-            $table->text('direccion');
+            $table->text('direccion')->nullable();
             $table->string('telefono');
             $table->string('email')->unique();
             $table->string('tipo_persona');
