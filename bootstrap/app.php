@@ -13,7 +13,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // $middleware->statefulApi();
+        // 1. Habilitar Sanctum para SPA (Crucial para las cookies HttpOnly)
+        $middleware->statefulApi();
+
+        // 2. Tus alias de middlewares personalizados
+        $middleware->alias([
+            'lapso.context' => \App\Http\Middleware\SetLapsoContext::class,
+        ]);
+
+        // 3. Configuración de proxies
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

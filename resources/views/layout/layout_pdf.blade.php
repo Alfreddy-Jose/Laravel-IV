@@ -42,6 +42,19 @@
             font-weight: bold;
             margin-top: 10px;
         }
+
+        .logo-container {
+            text-align: center;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .logo-img {
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto;
+            display: block;
+        }
     </style>
 
     @stack('stilos')
@@ -49,10 +62,10 @@
 </head>
 
 <body>
-    <div style="display: flex; justify-content: center; align-items: center; margin: 10px 0;">
-        <img src="{{ public_path('img/PDF.jpg') }}" alt="Logo de la institución."
-            style="max-width: 100%; margin: 0 8px;">
+    <div class="logo-container">
+        <img src="{{ public_path('images/cabecera exel.png') }}" alt="Logo de la institución." class="logo-img">
     </div>
+    
     <div class="header-section">
         <div class="header-main">LISTADO DE @yield('title_lista')</div>
     </div>

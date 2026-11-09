@@ -15,13 +15,12 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'broadcasting/auth'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'broadcasting/auth'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
         'http://localhost:5173',
-        'http://localhost:5174',
         'https://frontend-iv-omega.vercel.app',
         'https://frontend-445jbahst-alfreddys-projects.vercel.app',
         'https://frontend-iv-git-master-alfreddys-projects.vercel.app',

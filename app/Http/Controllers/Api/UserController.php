@@ -6,13 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Requests\UpdateProfilUserRequest;
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdatePasswordRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
-use function Illuminate\Log\log;
 
+use function Illuminate\Log\log;
 
 class UserController extends Controller
 {
@@ -77,6 +79,15 @@ class UserController extends Controller
     // Metodo para Obtener datos del usuario
     public function show($usuario)
     {
+        $authenticatedUser = auth()->user();
+
+        // Validación BOLA: Permitir si es el mismo usuario o si posee el rol de Administrador
+        // if ($authenticatedUser->id != $usuario && !$authenticatedUser->hasRole('Administrador')) {
+        //     return response()->json([
+        //         'message' => 'No autorizado para ver este recurso.'
+        //     ], 403);
+        // }
+
         $user = User::with('roles:id,name')
             ->select('id', 'name', 'email')
             ->findOrFail($usuario);
@@ -97,26 +108,25 @@ class UserController extends Controller
 
         try {
             // Procesar el avatar
-  /*          if ($request->has('remove_avatar') && $request->remove_avatar) {
-                // Eliminar avatar existente
-                if ($user->avatar) {
-                    Storage::disk('public')->delete($user->avatar);
-                    $user->avatar = null;
-                }
-            } elseif ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
-                // Eliminar avatar anterior si existe
-                if ($user->avatar) {
-                    Storage::disk('public')->delete($user->avatar);
-                }
-                // Guardar nuevo avatar
-                $avatarPath = $request->file('avatar')->store('avatars', 'public');
-                $user->avatar = $avatarPath;
-            }*/
+            /*          if ($request->has('remove_avatar') && $request->remove_avatar) {
+                          // Eliminar avatar existente
+                          if ($user->avatar) {
+                              Storage::disk('public')->delete($user->avatar);
+                              $user->avatar = null;
+                          }
+                      } elseif ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
+                          // Eliminar avatar anterior si existe
+                          if ($user->avatar) {
+                              Storage::disk('public')->delete($user->avatar);
+                          }
+                          // Guardar nuevo avatar
+                          $avatarPath = $request->file('avatar')->store('avatars', 'public');
+                          $user->avatar = $avatarPath;
+                      }*/
 
             // Actualizar usuario
             $usuario->update([
                 'name' => $request['name'],
-                'lastname' => $request['lastname'],
                 'email' => $request['email'],
             ]);
 
@@ -210,5 +220,49 @@ class UserController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Actualizar datos del usuario autenticado.
+     */
+    public function updateProfile(UpdateProfilUserRequest $request, $user)
+    {
+        $usuario = User::findOrFail($user);
+
+        try {
+
+            // Actualizar usuario
+            $usuario->update([
+                'name' => $request['name'],
+                'email' => $request['email'],
+            ]);
+
+            $user = $usuario->load(['roles']);
+
+            return response()->json([
+                'message' => 'Perfil editado exitosamente',
+                'user' => $user
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al actualizar el Perfil',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updatePassword(UpdatePasswordRequest $request, User $user)
+    {
+
+        // Actualizar contraseña
+        $user->password = Hash::make($request->validated('new_password'));
+        $user->save();
+
+        // Recomendado: Revocar tokens activos si usas Laravel Sanctum
+        // $usuario->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Contraseña editada exitosamente'
+        ], 200);
     }
 }

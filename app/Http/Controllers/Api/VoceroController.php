@@ -3,132 +3,85 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreVoceroRequest;
-use App\Http\Requests\UpdateVoceroRequest;
-use App\Models\Persona;
-use App\Models\Seccion;
 use App\Models\Vocero;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Http\Requests\StoreVoceroRequest;
 
 class VoceroController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Muestra la lista de voceros.
+     * Permite filtrar por lapso_id (a través de secciones) o por tipo.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Obtener todos los voceros con sus relaciones
-        $voceros = Vocero::with(['persona', 'seccion'])
-            ->orderBy('created_at', 'asc')
-            ->get();
+        $user = auth()->user();
 
-        return response()->json($voceros);
+        // Obtener el pnf_id del usuario autenticado
+        $pnfUser = $user->pnf;
+        $pnfId = $pnfUser?->id;
+
+        $query = Vocero::with([
+            'estudiante.persona:id,cedula_persona,nombre,apellido,email',
+            'seccion.lapso',
+            'seccion.pnf:id,nombre' // Carga Eager para devolver la información del PNF
+        ])
+        // Filtro condicional por PNF del usuario (vía Sección)
+        ->when($pnfId, function ($q) use ($pnfId) {
+            $q->whereHas('seccion', function ($seccionQuery) use ($pnfId) {
+                $seccionQuery->where('pnf_id', $pnfId);
+            });
+        });
+
+        // Filtro por lapso académico
+        if ($request->filled('lapso_id')) {
+            $query->whereHas('seccion', function ($q) use ($request) {
+                $q->where('lapso_id', $request->lapso_id);
+            });
+        }
+
+        // Filtro opcional por sección
+        if ($request->filled('seccion_id')) {
+            $query->where('seccion_id', $request->seccion_id);
+        }
+
+        // Filtro opcional por tipo de vocero
+        if ($request->filled('tipo_vocero')) {
+            $query->where('tipo_vocero', $request->tipo_vocero);
+        }
+
+        $voceros = $query->latest()->get();
+
+        return response()->json([
+            'data' => $voceros
+        ], 200);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Registra/Designa un nuevo vocero.
      */
     public function store(StoreVoceroRequest $request)
     {
-        Vocero::create($request->all());
+        $vocero = Vocero::create($request->validated());
 
-        return response()->json(['message' => 'Vocero Registrado'], 200);
+        // Cargar relaciones para devolver el objeto completo a la UI
+        $vocero->load(['estudiante.persona', 'seccion.lapso']);
+
+        return response()->json([
+            'message' => 'Vocero designado exitosamente.',
+            'data'    => $vocero
+        ], 201);
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show($vocero)
-    {
-        $vocero = Vocero::findOrFail($vocero);
-
-        return response()->json($vocero);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateVoceroRequest $request, Vocero $vocero)
-    {
-        $vocero->update($request->validated());
-
-        return response()->json(['message' => 'Vocero Editado'], 200);
-    }
-
-    /**
-     * Remove the specified resource from storage.
+     * Elimina/Remueve la designación de un vocero.
      */
     public function destroy(Vocero $vocero)
     {
-        try {
-            DB::beginTransaction();
-            
-            // Eliminando el registro
-            $vocero->delete();
-            
-            DB::commit();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Vocero Eliminado'
-            ], 200);
-            
-        } catch (\Illuminate\Database\QueryException $e) {
-            DB::rollBack();
-            
-            // Código de error de restricción de clave foránea en PostgreSQL
-            if ($e->getCode() == '23503') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede eliminar el vocero porque tiene registros relacionados',
-                    'error_type' => 'foreign_key_constraint'
-                ], 422);
-            }
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar el vocero',
-                'error' => $e->getMessage()
-            ], 500);
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Ocurrio un error inesperado',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getDataSelect()
-    {
-        $secciones = Seccion::select('id', 'nombre')->get();
-        
-        $vocerosIds = Persona::where('tipo_persona', 'ESTUDIANTE')->select('id', 'cedula_persona', 'nombre', 'apellido')->get();
-        $voceros = Persona::where('tipo_persona', 'ESTUDIANTE')
-            ->whereDoesntHave('vocero')
-            ->get();
-
-        $vocerosEdit = $vocerosIds->map(function ($persona) {
-            return [
-                'id' => $persona->id,
-                'nombre' => $persona->nombre . ' ' . $persona->apellido . ' - ' . $persona->cedula_persona,
-            ];
-        });
-        $voceros = $voceros->map(function ($vocero) {
-            return [
-                'id' => $vocero->id,
-                'nombre' => $vocero->nombre . ' ' . $vocero->apellido . ' - ' . $vocero->cedula_persona,
-            ];
-        });
+        $vocero->delete();
 
         return response()->json([
-            'secciones' => $secciones,
-            'voceros' => $voceros,
-            'vocerosEdit' => $vocerosEdit,
+            'message' => 'Designación de vocero removida correctamente.'
         ], 200);
     }
 }

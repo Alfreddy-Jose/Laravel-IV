@@ -32,7 +32,12 @@ class UpdatePersonaRequest extends FormRequest
                 'nullable',
                 'numeric',
                 Rule::unique('personas', 'telefono')->ignore($this->route('persona')?->id)
-            ]
+            ],
+            'tipo_persona'   => 'required|string|in:ESTUDIANTE,DOCENTE,ADMINISTRATIVO',
+            'grado_inst'     => 'required|string',
+            'municipio_id'   => 'required|integer|exists:municipios,id_municipio',
+            // Seccion id es requerida condicionalmente si es ESTUDIANTE
+            'seccion_id'     => 'required_if:tipo_persona,ESTUDIANTE',
         ];
     }
 

@@ -1,9 +1,10 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Requests\StoreSedeRequest;
 use App\Http\Requests\UpdateSedeRequest;
-use App\Http\Controllers\Controller; 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Sede;
 use App\Models\Estado;
@@ -12,18 +13,29 @@ use App\Models\Pnf;
 use App\Models\Universidad;
 use Illuminate\Support\Facades\DB;
 
-
 class SedeController extends Controller
 {
     public function index()
     {
-        // Obtener todas las sedes
-        $sedes = Sede::with('municipio:municipio,id_municipio', 'pnfs:id,nombre')
-            ->select('id', 'nro_sede', 'nombre_sede', 'nombre_abreviado', 'direccion', 'municipio_id')
-            ->get(); 
+        $user = auth()->user();
 
-        // Enviando datos a la api
-        return response()->json($sedes);
+        // Obtener el pnf_id del usuario autenticado
+        $pnfUser = $user->pnf;
+        $pnfId = $pnfUser?->id;
+
+        $query = Sede::with(['municipio:municipio,id_municipio', 'pnfs:id,nombre'])
+            ->select('id', 'nro_sede', 'nombre_sede', 'nombre_abreviado', 'direccion', 'municipio_id');
+
+        // Filtrar únicamente las sedes asociadas al PNF del usuario
+        if ($pnfId) {
+            $query->whereHas('pnfs', function ($q) use ($pnfId) {
+                $q->where('pnfs.id', $pnfId);
+            });
+        }
+
+        $sedes = $query->get();
+
+        return response()->json($sedes, 200);
     }
 
     // Metodo para crear una nueva sede
@@ -46,8 +58,8 @@ class SedeController extends Controller
     public function show(Sede $sede)
     {
         // Cargando relaciones con municipios
-        // Y con PNF 
-            $sede->load(['municipio' => function ($query) {
+        // Y con PNF
+        $sede->load(['municipio' => function ($query) {
             $query->select('id_municipio', 'municipio', 'id_estado')
                 ->with(['estado' => function ($query) {
                     $query->select('id_estado', 'estado');
@@ -136,13 +148,13 @@ class SedeController extends Controller
     // Función para Traer los Municipios segun el Estado Seleccionado
     public function getMunicipios($estado)
     {
-        // traer todos los municipios de un estado 
+        // traer todos los municipios de un estado
         $municipios = Municipio::where('id_estado', $estado)->get();
 
         return response()->json($municipios);
     }
 
-        public function getUniversidad()
+    public function getUniversidad()
     {
         $universidad = Universidad::first(); // Usar first() en lugar de get()
 
@@ -154,7 +166,7 @@ class SedeController extends Controller
     }
 
     // Función para traer los PNFS
-     public function getPnf()
+    public function getPnf()
     {
         $pnf = Pnf::select('id', 'nombre')->get();
 

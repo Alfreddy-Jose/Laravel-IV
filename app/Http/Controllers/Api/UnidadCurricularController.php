@@ -17,33 +17,43 @@ class UnidadCurricularController extends Controller
      */
     public function index()
     {
-        // Obtener todas las unidades curriculares con sus trimestres y el trayecto,
-        // pero el trayecto esta relaciona es con los trimestres
-        $unidades = UnidadCurricular::with('trimestres')->get();
+        $user = auth()->user();
 
-        $unidades = $unidades->map(function ($unidad) {
+        // Resolver pnf_id usando el accessor de User
+        $pnfId = $user->pnf?->id;
+
+        $query = UnidadCurricular::with(['trimestres.trayecto']);
+
+        // Filtrar directamente por la clave foránea pnf_id si el usuario tiene uno asignado.
+        // Si $pnfId es null (admin sin PNF), no se aplica el filtro y muestra todas.
+        if ($pnfId) {
+            $query->where('pnf_id', $pnfId);
+        }
+
+        $unidades = $query->get()->map(function ($unidad) {
             return [
-                'id' => $unidad->id,
-                'nombre' => $unidad->nombre,
+                'id'             => $unidad->id,
+                'codigo'         => $unidad->codigo,
+                'pnf_id'         => $unidad->pnf_id,
+                'nombre'         => $unidad->nombre,
                 'hora_total_est' => $unidad->hora_total_est,
-                'hora_practica' => $unidad->hora_practica,
-                'periodo' => $unidad->periodo,
-                'hora_teorica' => $unidad->hora_teorica,
+                'hora_practica'  => $unidad->hora_practica,
+                'periodo'        => $unidad->periodo,
+                'hora_teorica'   => $unidad->hora_teorica,
                 'unidad_credito' => $unidad->unidad_credito,
-                'descripcion' => $unidad->descripcion,
-                'trimestres' => $unidad->trimestres
-                    ->map(function ($trimestre) {
-                        return [
-                            'id' => $trimestre->id,
-                            'trayecto_id' => $trimestre->trayecto_id,
-                            'nombre' => $trimestre->nombre_relativo,
-                            'trayecto' => $trimestre->trayecto->nombre,
-                        ];
-                    })
+                'descripcion'    => $unidad->descripcion,
+                'trimestres'     => $unidad->trimestres->map(function ($trimestre) {
+                    return [
+                        'id'          => $trimestre->id,
+                        'trayecto_id' => $trimestre->trayecto_id,
+                        'nombre'      => $trimestre->nombre_relativo,
+                        'trayecto'    => $trimestre->trayecto?->nombre,
+                    ];
+                })
             ];
         });
 
-        return response()->json($unidades);
+        return response()->json($unidades, 200);
     }
 
     /**
@@ -51,15 +61,22 @@ class UnidadCurricularController extends Controller
      */
     public function store(StoreUnidadCurricularRequest $request)
     {
+        $user = auth()->user();
+
+        // Obtener PNF asignado al usuario o tomar el del request
+        $pnfId = $user->pnf?->id ?? $request->input('pnf_id');
+
         // Guardando el registro
         $unidadCurricular = UnidadCurricular::create([
-            'nombre' => $request->nombre,
-            'descripcion' => $request->descripcion,
+            'pnf_id'         => $pnfId, // <- Se asigna el PNF resolviendo la prioridad
+            'nombre'         => $request->nombre,
+            'codigo'         => $request->codigo,
+            'descripcion'    => $request->descripcion,
             'unidad_credito' => $request->unidad_credito,
-            'hora_teorica' => $request->hora_teorica,
-            'hora_practica' => $request->hora_practica,
+            'hora_teorica'   => $request->hora_teorica,
+            'hora_practica'  => $request->hora_practica,
             'hora_total_est' => $request->hora_total_est,
-            'periodo' => $request->periodo
+            'periodo'        => $request->periodo
         ]);
 
         // Asociar trimestres
@@ -71,16 +88,7 @@ class UnidadCurricularController extends Controller
             $unidadCurricular->trimestres()->sync($request->trimestre_id);
         }
 
-        return response()->json(['message' => 'Unidad Curricular Registrada']);
-    }
-
-    public function exportarPDF()
-    {
-        $unidades = UnidadCurricular::with('trimestres')->get();
-
-        $pdf = Pdf::loadView('pdf.unidad_curricular', compact('unidades'));
-
-        return $pdf->download('unidades_curriculares.pdf');
+        return response()->json(['message' => 'Unidad Curricular Registrada'], 201);
     }
 
     /**
@@ -105,15 +113,22 @@ class UnidadCurricularController extends Controller
      */
     public function update(UpdateUnidadCurricularRequest $request, UnidadCurricular $unidad_curricular)
     {
+        $user = auth()->user();
+
+        // Resolver el PNF: Prioriza el del usuario autenticado; si es null, toma el del request
+        $pnfId = $user->pnf?->id ?? $request->input('pnf_id');
+
         // Actualizar la unidad curricular
         $unidad_curricular->update([
-            'nombre' => $request->nombre,
-            'descripcion' => $request->descripcion,
+            'pnf_id'         => $pnfId,
+            'nombre'         => $request->nombre,
+            'codigo'         => $request->codigo,
+            'descripcion'    => $request->descripcion,
             'unidad_credito' => $request->unidad_credito,
-            'hora_teorica' => $request->hora_teorica,
-            'hora_practica' => $request->hora_practica,
+            'hora_teorica'   => $request->hora_teorica,
+            'hora_practica'  => $request->hora_practica,
             'hora_total_est' => $request->hora_total_est,
-            'periodo' => $request->periodo
+            'periodo'        => $request->periodo
         ]);
 
         // Sincronizar trimestres (elimina los antiguos y agrega los nuevos)
@@ -152,7 +167,7 @@ class UnidadCurricularController extends Controller
         return response()->json($trimestres);
     }
 
-        public function getTrimestresByTrayecto($trayectoId)
+    public function getTrimestresByTrayecto($trayectoId)
     {
         $trimestres = Trimestre::where('trayecto_id', $trayectoId)
             ->orderBy('numero_relativo')
@@ -166,5 +181,15 @@ class UnidadCurricularController extends Controller
         });
 
         return response()->json($trimestres);
+    }
+
+    public function getUnidadesByPnf($pnfId)
+    {
+        $unidades = UnidadCurricular::where('pnf_id', $pnfId)
+            ->select('id', 'nombre')
+            ->orderBy('nombre', 'asc')
+            ->get();
+
+        return response()->json($unidades);
     }
 }

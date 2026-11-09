@@ -28,7 +28,13 @@ class StorePersonaRequest extends FormRequest
             "apellido" => "required|string",
             "email" => "email|unique:personas,email",
             "direccion" => "max:255|nullable",
-            "telefono" => "numeric|unique:personas,telefono"
+            "telefono" => "numeric|unique:personas,telefono",
+            // Asegúrate de que estas tres reglas existan:
+            'tipo_persona'   => 'required|string|in:ESTUDIANTE,DOCENTE,ADMINISTRATIVO', //
+            'grado_inst'     => 'required|string', //
+            'municipio_id'   => 'required|integer|exists:municipios,id_municipio',
+            // Seccion id es requerida condicionalmente si es ESTUDIANTE
+            'seccion_id'     => 'required_if:tipo_persona,ESTUDIANTE',
         ];
     }
 

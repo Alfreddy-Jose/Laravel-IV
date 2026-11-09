@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 
 class StoreLapsoAcademicoRequest extends FormRequest
 {
@@ -25,8 +26,24 @@ class StoreLapsoAcademicoRequest extends FormRequest
         return [
             // validaciones
             "nombre_lapso" => "required|unique:lapso_academicos,nombre_lapso",
-            "ano" => "required",
-            "tipo_lapso_id" => "required|exists:tipo_lapsos,id"
+            'ano_academico_id' => 'required|exists:ano_academicos,id',
+            // Aquí añadimos la validación condicional y única
+            'tipo_lapso_id'    => [
+                'required',
+                'exists:tipo_lapsos,id',
+                function ($attribute, $value, $fail) {
+                    // 1. Validar que no exista YA ese mismo tipo de lapso en el año seleccionado
+                    $existeRepetido = DB::table('lapso_academicos')
+                        ->where('ano_academico_id', $this->ano_academico_id)
+                        ->where('tipo_lapso_id', $value)
+                        ->exists();
+
+                    if ($existeRepetido) {
+                        $fail('El año académico seleccionado ya tiene registrado un lapso de este tipo.');
+                    }
+                },
+            ],
+
         ];
     }
 
@@ -34,7 +51,7 @@ class StoreLapsoAcademicoRequest extends FormRequest
     {
         return [
             "nombre_lapso" => "nombre lapso",
-            "ano" => "año",
+            "ano_academico_id" => "Año Académico",
             "tipo_lapso_id" => "tipo lapso"
         ];
     }

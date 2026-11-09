@@ -13,6 +13,10 @@ class CreateTrayectoTrimestreTrigger extends Migration
      */
     public function up()
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         // Primero eliminamos el trigger si existe
         DB::statement('DROP TRIGGER IF EXISTS trigger_crear_trimestres ON trayectos;');
 
@@ -59,7 +63,7 @@ class CreateTrayectoTrimestreTrigger extends Migration
                         trayecto_id, 
                         created_at, 
                         updated_at
-                    ) VALUES (
+                     ) VALUES (
                         romanos[trimestre_base + i],
                         i,  -- Este es el número relativo (siempre 1, 2, 3)
                         NEW.id,
@@ -89,6 +93,10 @@ class CreateTrayectoTrimestreTrigger extends Migration
      */
     public function down()
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::unprepared('DROP TRIGGER IF EXISTS after_trayecto_insert ON trayectos;');
         DB::unprepared('DROP FUNCTION IF EXISTS crear_trimestres_para_trayecto();');
     }

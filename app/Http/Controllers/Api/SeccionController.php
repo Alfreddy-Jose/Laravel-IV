@@ -211,7 +211,9 @@ class SeccionController extends Controller
     {
         $trayectos = Trayecto::select('id', 'nombre')->get();
         $tipo_matricula = Matricula::select('id', 'nombre', 'numero')->get();
-        $lapsos = LapsoAcademico::select('id', 'nombre_lapso', 'ano')->get();
+        $lapsos = LapsoAcademico::select('id', 'nombre_lapso')
+        ->where('status', 'activo')
+        ->get();
         $sedes = Sede::select('id', 'nombre_sede')->get();
         $pnf = Pnf::select('id', 'nombre')->get();
 
@@ -224,7 +226,7 @@ class SeccionController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Obtener Pnfs basados en sede seleccionada
      */
     public function getPnfs($sedeId)
@@ -270,7 +272,7 @@ class SeccionController extends Controller
 
 
         // Descargar con el nombre personalizado
-        return $pdf->stream("Secciones_" . $request->lapso . "pdf", [ 
+        return $pdf->stream("Secciones_" . $request->lapso . "pdf", [
             'Attachment' => true // Fuerza la descarga
         ]);
     }

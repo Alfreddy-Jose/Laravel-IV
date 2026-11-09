@@ -99,6 +99,30 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'vocero.eliminar']);
         Permission::firstOrCreate(['name' => 'vocero.ver']);
 
+        // Permisos de Años Académicos
+        Permission::firstOrCreate(['name' => 'anoAcademico.crear']);
+        Permission::firstOrCreate(['name' => 'anoAcademico.editar']);
+        Permission::firstOrCreate(['name' => 'anoAcademico.eliminar']);
+        Permission::firstOrCreate(['name' => 'anoAcademico.ver']);
+
+        // Permisos de Proyección Académica
+        Permission::firstOrCreate(['name' => 'proyeccion.crear']);
+        Permission::firstOrCreate(['name' => 'proyeccion.editar']);
+        Permission::firstOrCreate(['name' => 'proyeccion.eliminar']);
+        Permission::firstOrCreate(['name' => 'proyeccion.ver']);
+
+        // Permisos de Parametros Proyección
+        Permission::firstOrCreate(['name' => 'parametro.crear']);
+        Permission::firstOrCreate(['name' => 'parametro.editar']);
+        Permission::firstOrCreate(['name' => 'parametro.eliminar']);
+        Permission::firstOrCreate(['name' => 'parametro.ver']);
+
+        // Permisos de Parametros Estadistica inscripcion
+        Permission::firstOrCreate(['name' => 'estadistica.crear']);
+        Permission::firstOrCreate(['name' => 'estadistica.editar']);
+        Permission::firstOrCreate(['name' => 'estadistica.eliminar']);
+        Permission::firstOrCreate(['name' => 'estadistica.ver']);
+
         //  Crear rol de super-admin
         $adminRole = Role::firstOrCreate(['name' => 'Administrador']);
         // Asignar todos los permisos al rol de super-admin

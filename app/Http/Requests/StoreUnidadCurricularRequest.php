@@ -22,24 +22,31 @@ class StoreUnidadCurricularRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = auth()->user();
+
+        // Si el usuario no tiene PNF asignado, 'pnf_id' debe ser obligatorio en el request
+        $pnfRule = $user->pnf?->id ? 'nullable' : 'required|exists:pnfs,id';
+
         return [
-            "nombre" => "required|string|unique:unidad_curriculars,nombre",
-            "descripcion" => "nullable|string",
+            "pnf_id"         => $pnfRule,
+            "nombre"         => "required|string",
+            "descripcion"    => "nullable|string",
             "unidad_credito" => "required|numeric",
-            "hora_teorica" => "required|numeric",
-            "hora_practica" => "numeric|nullable",
-            "periodo" => "required",
-            "trimestre_id" => "required"
+            "hora_teorica"   => "required|numeric",
+            "hora_practica"  => "numeric|nullable",
+            "periodo"        => "required",
+            "trimestre_id"   => "required"
         ];
     }
 
     public function attributes()
     {
         return [
-            "unidad_credito" => "required|numeric",
-            "hora_teorica" => "horas teorícas",
-            "hora_practica" => "horas practícas",
-            "trimestre_id" => "trimestre"
+            "pnf_id"         => "PNF",
+            "unidad_credito" => "unidades de crédito",
+            "hora_teorica"   => "horas teóricas",
+            "hora_practica"  => "horas prácticas",
+            "trimestre_id"   => "trimestre"
         ];
     }
 }

@@ -15,30 +15,40 @@ class CoordinadorController extends Controller
     /**
      * Display a listing of the resource.
      */
-
     public function index()
     {
-        // Solo coordinadores activos
+        $user = auth()->user();
+
+        // Obtener el pnf_id del usuario si es coordinador o tiene un PNF asignado
+        $pnfUser = $user->pnf;
+        $pnfId = $pnfUser?->id;
+
         $coordinadores = Coordinador::with([
             'docente:id,persona_id,pnf_id',
             'docente.persona:id,cedula_persona,nombre,apellido',
             'docente.pnf:id,nombre'
         ])
             ->activo() // Solo activos
+            // Si existe pnfId, se filtra solo los coordinadores cuyo docente pertenezca a ese PNF
+            ->when($pnfId, function ($query, $pnfId) {
+                $query->whereHas('docente', function ($q) use ($pnfId) {
+                    $q->where('pnf_id', $pnfId);
+                });
+            })
             ->orderBy('created_at', 'asc')
             ->get();
 
         return response()->json($coordinadores);
     }
-/*     public function index()
-    {
-        // Obtener todos los Coordinadores
-        $coordinadores = Coordinador::with(['docente:id,persona_id,pnf_id', 'docente.persona:id,cedula_persona,nombre,apellido', 'docente.pnf:id,nombre'])
-            ->orderBy('created_at', 'asc')
-            ->get();
+    /*     public function index()
+        {
+            // Obtener todos los Coordinadores
+            $coordinadores = Coordinador::with(['docente:id,persona_id,pnf_id', 'docente.persona:id,cedula_persona,nombre,apellido', 'docente.pnf:id,nombre'])
+                ->orderBy('created_at', 'asc')
+                ->get();
 
-        return response()->json($coordinadores);
-    } */
+            return response()->json($coordinadores);
+        } */
 
     /**
      * Store a newly created resource in storage.
@@ -136,31 +146,83 @@ class CoordinadorController extends Controller
 
     public function getDocentes($boolean)
     {
-        $Docentes = Docente::with(['persona:id,cedula_persona,nombre,apellido', 'pnf:id,nombre'])->whereDoesntHave('coordinador')->get();
+        $user = auth()->user();
 
+        // Obtener el pnf_id del usuario (si tiene un PNF asociado)
+        $pnfUser = $user->pnf;
+        $pnfId = $pnfUser?->id;
 
-        $Docentes = $Docentes->map(function ($docente) {
+        // 1. Consulta para docentes que NO son coordinadores
+        $docentesQuery = Docente::with(['persona:id,cedula_persona,nombre,apellido', 'pnf:id,nombre'])
+            ->whereDoesntHave('coordinador')
+            ->when($pnfId, function ($q) use ($pnfId) {
+                $q->where('pnf_id', $pnfId);
+            });
+
+        $docentes = $docentesQuery->get()->map(function ($docente) {
             return [
                 'id' => $docente->id,
-                'nombre' => $docente->persona->nombre . ' ' . $docente->persona->apellido . ' - ' . $docente->persona->cedula_persona,
-                'nombre_pnf' => $docente->pnf->nombre,
-                'id_pnf' => $docente->pnf->id,
+                'nombre' => 'V-' . $docente->persona->cedula_persona . ' - ' . $docente->persona->nombre . ' ' . $docente->persona->apellido,
+                'nombre_pnf' => $docente->pnf?->nombre,
+                'id_pnf' => $docente->pnf?->id,
             ];
         });
 
+        // 2. Consulta para edición (si $boolean es true)
+        $docentesEdit = null;
+
         if ($boolean) {
-            $DocentesIds = Docente::with(['persona:id,cedula_persona,nombre,apellido'])->get();
-            $DocentesEdit = $DocentesIds->map(function ($docente) {
+            $docentesEditQuery = Docente::with(['persona:id,cedula_persona,nombre,apellido'])
+                ->when($pnfId, function ($q) use ($pnfId) {
+                    $q->where('pnf_id', $pnfId);
+                });
+
+            $docentesEdit = $docentesEditQuery->get()->map(function ($docente) {
                 return [
                     'id' => $docente->id,
-                    'nombre' => $docente->persona->nombre . ' ' . $docente->persona->apellido . ' - ' . $docente->persona->cedula_persona,
+                    'nombre' => 'V-' . $docente->persona->cedula_persona . ' - ' . $docente->persona->nombre . ' ' . $docente->persona->apellido,
                 ];
             });
         }
 
         return response()->json([
-            'docentes' => $Docentes,
-            'docentesEdit' => $boolean ? $DocentesIds : null,
+            'docentes' => $docentes,
+            'docentesEdit' => $docentesEdit,
+        ], 200);
+    }
+
+    // Metodo para obtener unidades curriculares segun el docente seleccionado
+    public function getUnidadesCurricularesPorDocente($docenteId)
+    {
+        $user = auth()->user();
+
+        // 1. Buscar directamente al docente con su PNF para validación
+        $docente = Docente::select('id', 'pnf_id')->find($docenteId);
+
+        if (!$docente) {
+            return response()->json([
+                'message' => 'Docente no encontrado'
+            ], 404);
+        }
+
+        // 2. Control de seguridad: Si no es ADMINISTRADOR, validar que pertenezca al mismo PNF
+        if (!$user->hasRole('ADMINISTRADOR')) {
+            $pnfId = $user->pnf?->id;
+
+            if (!$pnfId || $docente->pnf_id !== $pnfId) {
+                return response()->json([
+                    'message' => 'No tiene permisos para consultar las unidades curriculares de este docente'
+                ], 403);
+            }
+        }
+
+        // 3. Obtener solo las Unidades Curriculares asociadas a dicho docente
+        $unidadesCurriculares = $docente->unidades_curriculares()
+            ->select('unidades_curriculares.id', 'unidades_curriculares.nombre')
+            ->get();
+
+        return response()->json([
+            'unidadesCurriculares' => $unidadesCurriculares
         ], 200);
     }
 }

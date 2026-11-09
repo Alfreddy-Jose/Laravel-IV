@@ -17,17 +17,18 @@ class GestionAcademicaService
      */
 
 
-    public function obtenerMatrizDashboard(int $lapsoId, int $pnfId)
+    public function obtenerMatrizDashboard(int $pnfId)
     {
+        $lapsoId = app('lapso_actual');
         $lapsoMaestro = DB::table('lapso_academicos')->where('id', $lapsoId)->first();
         $lapsoTextoPlano = $lapsoMaestro ? $lapsoMaestro->nombre_lapso : $lapsoId;
 
-        // 1. Obtener TODA la carga académica (Aplicando las correcciones de Lógica)
+        // 1. Obtener TODA la carga académica
         $cargas = DB::table('docente_unidad_curricular as duc')
             ->join('docentes as d', 'duc.docente_id', '=', 'd.id')
             ->join('personas as p', 'd.persona_id', '=', 'p.id')
             ->join('unidad_curriculars as uc', 'duc.unidad_curricular_id', '=', 'uc.id')
-            // CORRECCIÓN 1: Validamos que la clase impartida le pertenezca exactamente a ESTE docente
+            // Validamos que la clase impartida le pertenezca exactamente a este docente
             ->join('clases as c', function ($join) {
                 $join->on('uc.id', '=', 'c.unidad_curricular_id')
                     ->on('c.docente_id', '=', 'd.id');
@@ -46,8 +47,6 @@ class GestionAcademicaService
                 's.id as seccion_id',
                 's.nombre as seccion_nombre'
             )
-            // CORRECCIÓN 2: GROUP BY estricto para PostgreSQL.
-            // Esto elimina los duplicados si una clase tiene varios horarios en la semana.
             ->groupBy(
                 'd.id',
                 'p.nombre',
@@ -80,23 +79,29 @@ class GestionAcademicaService
                     return [
                         $entrega->tipo_documento_id => [
                             'entregado' => (bool) $entrega->entregado,
-                            'observaciones' => $entrega->observaciones
+                            'observaciones' => $entrega->observaciones,
+                            'archivo_url' => $entrega->archivo_path ? asset('storage/' . $entrega->archivo_path) : null
                         ]
                     ];
                 })->toArray();
 
             // Mapear secciones
             $secciones = $asignaciones->map(function ($asig) use ($entregasDocente) {
-                // Entregas específicas para esta sección
-                $entregasSeccion = $entregasDocente->where('seccion_id', $asig->seccion_id)
+
+                // Filtramos por sección Y por unidad curricular
+                $entregasSeccion = $entregasDocente
+                    ->where('seccion_id', $asig->seccion_id)
+                    ->where('unidad_curricular_id', $asig->uc_id)
                     ->mapWithKeys(function ($entrega) {
                         return [
                             $entrega->tipo_documento_id => [
                                 'entregado' => (bool) $entrega->entregado,
-                                'observaciones' => $entrega->observaciones
+                                'observaciones' => $entrega->observaciones,
+                                'archivo_url' => $entrega->archivo_path ? asset('storage/' . $entrega->archivo_path) : null
                             ]
                         ];
                     })->toArray();
+
                 return [
                     'seccion_id' => $asig->seccion_id,
                     'seccion_nombre' => $asig->seccion_nombre,

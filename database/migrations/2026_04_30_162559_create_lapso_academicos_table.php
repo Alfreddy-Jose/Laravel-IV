@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('lapso_academicos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre_lapso', 50);
-            $table->bigInteger('ano');
-            $table->date('fecha_inicio');
-            $table->date('fecha_fin');
-            $table->boolean('status')->default(true);
+            $table->date('fecha_inicio')->nullable();
+            $table->date('fecha_fin')->nullable();
+            $table->string('status')->default('planificacion');
+            $table->foreignId('ano_academico_id')
+                ->constrained('ano_academicos')
+                ->onDelete('cascade');
             $table->foreignId('tipo_lapso_id')
                 ->constrained()
                 ->onDelete('cascade');

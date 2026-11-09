@@ -23,6 +23,11 @@ return new class extends Migration
                 ->constrained('docentes')
                 ->onDelete('cascade');
 
+            // Relación con la tabla unidades_curriculares
+            $table->foreignId('unidad_curricular_id')->nullable()
+                ->constrained('unidades_curriculares')
+                ->onDelete('cascade');
+
             // Relación con la tabla lapso_academicos
             $table->foreignId('lapso_academico_id')
                 ->constrained('lapso_academicos')
@@ -35,14 +40,14 @@ return new class extends Migration
 
             // Relación con la tabla secciones
             $table->foreignId('seccion_id')
-            ->nullable()
-            ->constrained('seccions')
-            ->onDelete('cascade');
+                ->nullable()
+                ->constrained('seccions')
+                ->onDelete('cascade');
 
             // Garantiza que no existan duplicados de la misma entrega en un mismo lapso académico
             $table->unique(
-                ['docente_id', 'tipo_documento_id', 'seccion_id', 'lapso_academico_id'],
-                'unique_entrega'
+                ['docente_id', 'tipo_documento_id', 'seccion_id', 'lapso_academico_id', 'unidad_curricular_id'],
+                'unique_entrega_materia'
             );
 
             $table->timestamps();

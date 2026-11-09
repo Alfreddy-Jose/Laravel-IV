@@ -20,7 +20,7 @@ class PnfController extends Controller
         // Si no hay registros, devuelve un array vacío para que el frontend lo maneje
         if ($pnf->isEmpty()) {
             return response()->json([], 200);
-        } 
+        }
 
         // Enviar a la vista del listado de PNF con la variable
         return response()->json($pnf, 200);
@@ -30,11 +30,6 @@ class PnfController extends Controller
     public function store(StorePnfRequest $request)
     {
         try {
-            // Procesar el logo si existe
-            // $logoPath = null;
-            // if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
-            //     $logoPath = $request->file('logo')->store('pnf_logos', 'public');
-            // }
 
             // Crear el PNF con el logo
             $pnf = Pnf::create([
@@ -81,26 +76,6 @@ class PnfController extends Controller
     {
         try {
             DB::beginTransaction();
-
-            // Procesar eliminación del logo
-/*            if ($request->has('remove_logo') && $request->remove_logo == '1') {
-                // Eliminar logo existente
-                if ($pnf->logo) {
-                    Storage::disk('public')->delete($pnf->logo);
-                    $pnf->logo = null;
-                }
-            } 
-            // Procesar nuevo logo
-            elseif ($request->hasFile('logo') && $request->file('logo')->isValid()) {
-                // Eliminar logo anterior si existe
-                if ($pnf->logo) {
-                    Storage::disk('public')->delete($pnf->logo);
-                }
-                
-                // Guardar nuevo logo
-                $logoPath = $request->file('logo')->store('pnf_logos', 'public');
-                $pnf->logo = $logoPath;
-            }*/
 
             // Actualizar datos del PNF
             $pnf->update([
@@ -165,7 +140,7 @@ class PnfController extends Controller
                 'message' => 'Error al eliminar el PNF',
                 'error' => $e->getMessage()
             ], 500);
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
 

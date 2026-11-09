@@ -20,12 +20,30 @@ class DocenteController extends Controller
      */
     public function index()
     {
-        // Obtener todos los docentes con sus relaciones
-        $docentes = Docente::with(['persona', 'pnf', 'unidades_curriculares:id,nombre', 'condicionContrato:id,docente_id,fecha_inicio,fecha_fin,dedicacion,tipo'])
-            ->orderBy('created_at', 'asc')
-            ->get();
+        $user = auth()->user();
 
-        // Retornar la lista de docentes
+        $query = Docente::with([
+            'persona',
+            'pnf',
+            'unidades_curriculares:id,nombre',
+            'condicionContrato:id,docente_id,fecha_inicio,fecha_fin,dedicacion,tipo'
+        ])->orderBy('created_at', 'asc');
+
+        // Comprobar si es coordinador para aplicar el filtro
+        if ($user->hasRole('COORDINADOR') || $user->rol === 'COORDINADOR') {
+            // Obtenemos el PNF del coordinador usando tu accessor $user->pnf
+            $pnfId = $user->pnf?->id;
+
+            if ($pnfId) {
+                $query->where('pnf_id', $pnfId);
+            } else {
+                // Si el coordinador no tiene PNF activo, no devuelve docentes
+                $query->whereNull('pnf_id');
+            }
+        }
+
+        $docentes = $query->get();
+
         return response()->json($docentes);
     }
 
@@ -159,25 +177,65 @@ class DocenteController extends Controller
 
     public function getDataSelect()
     {
-        $docentesIds = Persona::where('tipo_persona', 'DOCENTE')->select('id', 'cedula_persona', 'nombre', 'apellido')->get();
+        $user = auth()->user();
+
+        $pnfUser = $user->pnf;
+        $pnfId = $pnfUser?->id;
+
+        // FIX: $user->rol no existe como columna en `users`; Spatie gestiona roles
+        // en tablas separadas. Usar sólo hasRole().
+        $esCoordinador = $user->hasRole('COORDINADOR');
+
+        // 1. Consulta de PNFs
+        $pnfQuery = Pnf::select('id', 'nombre');
+
+        // 2. Consulta de Unidades Curriculares
+        $unidadesQuery = UnidadCurricular::select('id', 'nombre');
+
+        if ($esCoordinador) {
+            if ($pnfId) {
+                $pnfQuery->where('id', $pnfId);
+
+                // Relación: UnidadesCurriculares -> Trimestres -> Trayectos -> PNFs (pnf_trayecto)
+                // FIX: Calificar con 'pnf_trayecto.pnf_id' para evitar ambigüedad en PostgreSQL
+                // cuando Eloquent hace JOIN entre `pnfs` y `pnf_trayecto` (ambas tienen `pnf_id`).
+                $unidadesQuery->whereHas('trimestres.trayecto.pnfs', function ($q) use ($pnfId) {
+                    $q->where('pnf_trayecto.pnf_id', $pnfId);
+                });
+            } else {
+                // Coordinador sin PNF activo → no exponer datos
+                $pnfQuery->whereNull('id');
+                $unidadesQuery->whereNull('id');
+            }
+        }
+
+        $pnf = $pnfQuery->get();
+        $unidadesCurriculares = $unidadesQuery->get();
+
+        // 3. Consulta de docentes para edición
+        $docentesEditQuery = Persona::where('tipo_persona', 'DOCENTE')
+            ->select('id', 'nombre', 'apellido', 'cedula_persona');
+
+        if ($esCoordinador && $pnfId) {
+            $docentesEditQuery->whereHas('docente', function ($q) use ($pnfId) {
+                $q->where('pnf_id', $pnfId);
+            });
+        }
+
+        $docentesEdit = $docentesEditQuery->get()->map(fn ($p) => [
+            'id' => $p->id,
+            'nombre' => "{$p->nombre} {$p->apellido} - {$p->cedula_persona}",
+        ]);
+
+        // 4. Docentes disponibles
         $docentes = Persona::where('tipo_persona', 'DOCENTE')
             ->whereDoesntHave('docente')
-            ->get();
-        $unidadesCurriculares = UnidadCurricular::select('id', 'nombre')->get();
-        $pnf = Pnf::select('id', 'nombre')->get();
-
-        $docentesEdit = $docentesIds->map(function ($persona) {
-            return [
-                'id' => $persona->id,
-                'nombre' => $persona->nombre . ' ' . $persona->apellido . ' - ' . $persona->cedula_persona,
-            ];
-        });
-        $docentes = $docentes->map(function ($docente) {
-            return [
-                'id' => $docente->id,
-                'nombre' => $docente->nombre . ' ' . $docente->apellido . ' - ' . $docente->cedula_persona,
-            ];
-        });
+            ->select('id', 'nombre', 'apellido', 'cedula_persona')
+            ->get()
+            ->map(fn ($d) => [
+                'id' => $d->id,
+                'nombre' => "{$d->nombre} {$d->apellido} - {$d->cedula_persona}",
+            ]);
 
         return response()->json([
             'docentes' => $docentes,
@@ -240,42 +298,42 @@ class DocenteController extends Controller
             ->join('horarios', 'clases.horario_id', '=', 'horarios.id')
             ->join('trimestres', 'horarios.trimestre_id', '=', 'trimestres.id');
 
-            $query->where('horarios.lapso_academico', $lapsoAcademico);
+        $query->where('horarios.lapso_academico', $lapsoAcademico);
 
-            $docentesPorTrimestre = $query
-            ->select(
-                'docentes.id as docente_id',
-                DB::raw('MIN(docentes.categoria) as categoria'),
-                DB::raw('MIN(docentes.horas_dedicacion) as horas_dedicacion'),
-                DB::raw('MIN(personas.nombre) as nombre'),
-                DB::raw('MIN(personas.apellido) as apellido'),
-                DB::raw('MIN(personas.cedula_persona) as cedula_persona'),
-                'trimestres.numero_relativo',
-                DB::raw('COUNT(clases.id) as clases_count')
-            )
-            ->groupBy(
-                'docentes.id',           // Solo el ID del docente
-                'trimestres.numero_relativo' // Solo el numero_relativo del trimestre
-            )
-            ->get()
-            ->map(function ($item, $index) {
-                // Aplicamos la misma lógica del accessor
-                $romanos = [1 => 'I', 2 => 'II', 3 => 'III'];
-                $nombreRelativo = $romanos[$item->numero_relativo] ?? 'N/A';
+        $docentesPorTrimestre = $query
+        ->select(
+            'docentes.id as docente_id',
+            DB::raw('MIN(docentes.categoria) as categoria'),
+            DB::raw('MIN(docentes.horas_dedicacion) as horas_dedicacion'),
+            DB::raw('MIN(personas.nombre) as nombre'),
+            DB::raw('MIN(personas.apellido) as apellido'),
+            DB::raw('MIN(personas.cedula_persona) as cedula_persona'),
+            'trimestres.numero_relativo',
+            DB::raw('COUNT(clases.id) as clases_count')
+        )
+        ->groupBy(
+            'docentes.id',           // Solo el ID del docente
+            'trimestres.numero_relativo' // Solo el numero_relativo del trimestre
+        )
+        ->get()
+        ->map(function ($item, $index) {
+            // Aplicamos la misma lógica del accessor
+            $romanos = [1 => 'I', 2 => 'II', 3 => 'III'];
+            $nombreRelativo = $romanos[$item->numero_relativo] ?? 'N/A';
 
-                return [
-                    'id' => $index + 1, // ID secuencial para la tabla
-                    'docente_id' => $item->docente_id,
-                    'categoria' => $item->categoria,
-                    'horas_dedicacion' => $item->horas_dedicacion,
-                    'nombre_completo' => $item->nombre . ' ' . $item->apellido,
-                    'cedula' => $item->cedula_persona,
-                    'trimestre_id' => $item->numero_relativo,
-                    'trimestre_nombre' => $nombreRelativo,
-                    'trimestre_valor_real' => $item->numero_relativo,
-                    'clases_count' => $item->clases_count
-                ];
-            });
+            return [
+                'id' => $index + 1, // ID secuencial para la tabla
+                'docente_id' => $item->docente_id,
+                'categoria' => $item->categoria,
+                'horas_dedicacion' => $item->horas_dedicacion,
+                'nombre_completo' => $item->nombre . ' ' . $item->apellido,
+                'cedula' => $item->cedula_persona,
+                'trimestre_id' => $item->numero_relativo,
+                'trimestre_nombre' => $nombreRelativo,
+                'trimestre_valor_real' => $item->numero_relativo,
+                'clases_count' => $item->clases_count
+            ];
+        });
 
         return response()->json($docentesPorTrimestre);
     }
