@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Persona;
 use App\Models\Seccion;
 use App\Models\Pnf;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PersonaController extends Controller
 {
@@ -249,22 +250,50 @@ class PersonaController extends Controller
     }
 
 
-    /*    public function generarPDF(Request $request)
-        {
-            // Seleccionar las Personas
-            $query = Persona::query()->with('municipio');
+    /**
+     * Genera el reporte PDF del listado de personas.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (para filtrar por coordinador)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+        $pnfId = $pnfUser?->id;
 
-            if ($request->tipo_persona) {
-                $query->where('tipo_persona', $request->tipo_persona);
-            }
-            if ($request->grado_inst) {
-                $query->where('grado_inst', $request->grado_inst);
-            }
+        // 2. Consulta base con relaciones
+        $query = Persona::query()->with(['municipio']);
 
-            $personas = $query->get();
-            // Renderiza una vista blade para el PDF
-            $pdf = Pdf::loadView('pdf.personas', compact('personas'));
+        // 3. Filtrar por el PNF del usuario (estudiantes por sección y docentes por su pnf_id)
+        if ($pnfId && !$user->hasRole('ADMINISTRADOR')) {
+            $query->where(function ($q) use ($pnfId) {
+                $q->whereHas('estudiante.secciones', fn ($sub) => $sub->where('pnf_id', $pnfId))
+                    ->orWhereHas('docente', fn ($sub) => $sub->where('pnf_id', $pnfId));
+            });
+        }
+        // El administrador global puede filtrar opcionalmente por PNF (?pnf=)
+        elseif ($request->filled('pnf')) {
+            $pnfParam = $request->pnf;
+            $query->where(function ($q) use ($pnfParam) {
+                $q->whereHas('estudiante.secciones', fn ($sub) => $sub->where('pnf_id', $pnfParam))
+                    ->orWhereHas('docente', fn ($sub) => $sub->where('pnf_id', $pnfParam));
+            });
+        }
 
-            return $pdf->download('personas.pdf');
-        }*/
+        // 4. Filtros opcionales de la tabla
+        if ($request->filled('tipo_persona')) {
+            $query->where('tipo_persona', $request->tipo_persona);
+        }
+
+        if ($request->filled('grado_inst')) {
+            $query->where('grado_inst', $request->grado_inst);
+        }
+
+        $personas = $query->latest('id')->get();
+
+        // 5. Generar PDF
+        $pdf = Pdf::loadView('pdf.personas', compact('personas', 'pnfUser'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('PERSONAS_' . date('Y_m_d_His') . '.pdf');
+    }
 }

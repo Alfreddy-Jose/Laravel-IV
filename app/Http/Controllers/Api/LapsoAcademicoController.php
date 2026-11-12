@@ -11,6 +11,7 @@ use App\Models\AnoAcademico;
 use Illuminate\Http\JsonResponse;
 use App\Models\TipoLapso;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LapsoAcademicoController extends Controller
 {
@@ -75,8 +76,12 @@ class LapsoAcademicoController extends Controller
     // Metodo para Traer Lapsos academicos activos
     public function indexActivos()
     {
-        // Seleccionando datos del Lapso Academico
-        $lapsos = LapsoAcademico::activos()->with(['anoAcademico', 'tipoLapso'])->get();
+        // Orden cronológico estable: el frontend toma el primer elemento como
+        // lapso por defecto y debe coincidir con LapsoAcademico::actual().
+        $lapsos = LapsoAcademico::activos()
+            ->with(['anoAcademico', 'tipoLapso'])
+            ->ordenCronologico()
+            ->get();
 
         // Retornando los datos al Frontend
         return response()->json($lapsos);
@@ -355,5 +360,31 @@ class LapsoAcademicoController extends Controller
             'anosAptos'   => $anosAptos,
             'tipoLapsos'  => $tipoLapsos
         ], 200);
+    }
+
+    /**
+     * Genera el reporte PDF del cronograma de lapsos académicos.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (los lapsos son globales, el PNF solo se informa en el título)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+
+        // 2. Consulta base con relaciones
+        $query = LapsoAcademico::with(['anoAcademico', 'tipoLapso']);
+
+        // 3. Filtro opcional por año académico
+        if ($request->filled('ano_academico_id')) {
+            $query->where('ano_academico_id', $request->ano_academico_id);
+        }
+
+        $lapsos = $query->orderByDesc('id')->get();
+
+        // 4. Generar PDF
+        $pdf = Pdf::loadView('pdf.lapsos', compact('lapsos', 'pnfUser'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('LAPSOS_' . date('Y_m_d_His') . '.pdf');
     }
 }

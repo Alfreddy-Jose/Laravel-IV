@@ -8,6 +8,7 @@ use App\Http\Requests\StoreMatriculaRequest;
 use App\Http\Requests\UpdateMatriculaRequest;
 use App\Models\Matricula;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MatriculaController extends Controller
 {
@@ -100,5 +101,31 @@ class MatriculaController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Genera el reporte PDF del catálogo de tipos de matrícula.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (los tipos de matrícula son globales)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+
+        // 2. Consulta base
+        $query = Matricula::select('id', 'nombre', 'numero');
+
+        // 3. Filtro opcional por nombre
+        if ($request->filled('nombre')) {
+            $query->where('nombre', 'like', '%' . $request->nombre . '%');
+        }
+
+        $matriculas = $query->orderBy('numero')->get();
+
+        // 4. Generar PDF
+        $pdf = Pdf::loadView('pdf.matricula', compact('matriculas', 'pnfUser'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download('MATRICULAS_' . date('Y_m_d_His') . '.pdf');
     }
 }

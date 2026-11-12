@@ -19,7 +19,14 @@ class GestionAcademicaService
 
     public function obtenerMatrizDashboard(int $pnfId)
     {
-        $lapsoId = app('lapso_actual');
+        // El contexto lo publica App\Http\Middleware\SetLapsoContext. Si no
+        // existe (sistema sin lapsos), no hay matriz que calcular.
+        $lapsoId = app()->bound('lapso_actual') ? app('lapso_actual') : null;
+
+        if (! $lapsoId) {
+            return collect();
+        }
+
         $lapsoMaestro = DB::table('lapso_academicos')->where('id', $lapsoId)->first();
         $lapsoTextoPlano = $lapsoMaestro ? $lapsoMaestro->nombre_lapso : $lapsoId;
 

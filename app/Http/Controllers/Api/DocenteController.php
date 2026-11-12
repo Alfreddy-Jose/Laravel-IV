@@ -338,11 +338,40 @@ class DocenteController extends Controller
         return response()->json($docentesPorTrimestre);
     }
 
-    // Metodo para generar PDF
-    public function generarPDF()
+    /**
+     * Genera el reporte PDF del catálogo de docentes.
+     */
+    public function generarPDF(Request $request)
     {
-        $docentes = Docente::with('persona', 'pnf', 'unidades_curriculares', 'condicionContrato')->get();
-        $pdf = PDF::loadView('pdf.docentes', compact('docentes'));
-        return $pdf->download('docente.pdf');
+        // 1. Usuario autenticado y su PNF (para filtrar por coordinador)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+        $pnfId = $pnfUser?->id;
+
+        // 2. Consulta base con relaciones
+        $query = Docente::with([
+            'persona',
+            'pnf:id,nombre',
+            'unidades_curriculares:id,nombre',
+            'condicionContrato'
+        ]);
+
+        // 3. Filtrar por el PNF del usuario si aplica
+        if ($pnfId && !$user->hasRole('ADMINISTRADOR')) {
+            $query->where('pnf_id', $pnfId);
+        }
+
+        // 4. Filtro opcional por categoría
+        if ($request->filled('categoria')) {
+            $query->where('categoria', $request->categoria);
+        }
+
+        $docentes = $query->orderBy('created_at', 'asc')->get();
+
+        // 5. Generar PDF
+        $pdf = Pdf::loadView('pdf.docentes', compact('docentes', 'pnfUser'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('DOCENTES_' . date('Y_m_d_His') . '.pdf');
     }
 }

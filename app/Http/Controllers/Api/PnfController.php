@@ -8,6 +8,7 @@ use App\Http\Requests\UpdatePnfRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Pnf;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PnfController extends Controller
 {
@@ -150,5 +151,32 @@ class PnfController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Genera el reporte PDF del catálogo de PNF.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (para filtrar por coordinador)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+        $pnfId = $pnfUser?->id;
+
+        // 2. Consulta base
+        $query = Pnf::query();
+
+        // 3. Un coordinador solo visualiza su propio PNF
+        if ($pnfId && !$user->hasRole('ADMINISTRADOR')) {
+            $query->where('id', $pnfId);
+        }
+
+        $pnfs = $query->orderBy('nombre')->get();
+
+        // 4. Generar PDF
+        $pdf = Pdf::loadView('pdf.pnf', compact('pnfs', 'pnfUser'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download('PNFS_' . date('Y_m_d_His') . '.pdf');
     }
 }

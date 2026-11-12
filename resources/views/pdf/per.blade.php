@@ -20,6 +20,7 @@
                 <th>DOCENTE</th>
                 <th>CALIFICACIÓN</th>
                 <th>LAPSO ACADÉMICO</th>
+                <th>OBSERVACIONES</th>
             </tr>
         </thead>
         <tbody>
@@ -48,10 +49,11 @@
                     <td style="text-align: center;">
                         {{ $item->lapsoAcademico->nombre_lapso ?? 'N/A' }}
                     </td>
+                    <td>{{ $item->observaciones ?? 'S/O' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" style="text-align: center;">No hay registros PER encontrados para este filtro.</td>
+                    <td colspan="8" style="text-align: center;">No hay registros PER encontrados para este filtro.</td>
                 </tr>
             @endforelse
         </tbody>

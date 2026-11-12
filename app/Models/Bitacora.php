@@ -15,6 +15,7 @@ class Bitacora extends Model
         'registro_id',
         'datos_anteriores',
         'datos_nuevos',
+        'ip_address',
     ];
 
     // Convierte automáticamente los campos JSON a Array en PHP

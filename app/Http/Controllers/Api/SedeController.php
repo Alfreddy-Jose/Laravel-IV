@@ -12,6 +12,7 @@ use App\Models\Municipio;
 use App\Models\Pnf;
 use App\Models\Universidad;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SedeController extends Controller
 {
@@ -171,5 +172,34 @@ class SedeController extends Controller
         $pnf = Pnf::select('id', 'nombre')->get();
 
         return response()->json($pnf);
+    }
+
+    /**
+     * Genera el reporte PDF del catálogo de sedes.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (para filtrar por coordinador)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+        $pnfId = $pnfUser?->id;
+
+        // 2. Consulta base con relaciones
+        $query = Sede::with(['municipio:municipio,id_municipio', 'pnfs:id,nombre']);
+
+        // 3. Filtrar únicamente las sedes asociadas al PNF del usuario
+        if ($pnfId && !$user->hasRole('ADMINISTRADOR')) {
+            $query->whereHas('pnfs', function ($q) use ($pnfId) {
+                $q->where('pnfs.id', $pnfId);
+            });
+        }
+
+        $sedes = $query->orderBy('nro_sede')->get();
+
+        // 4. Generar PDF
+        $pdf = Pdf::loadView('pdf.sedes', compact('sedes', 'pnfUser'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download('SEDES_' . date('Y_m_d_His') . '.pdf');
     }
 }

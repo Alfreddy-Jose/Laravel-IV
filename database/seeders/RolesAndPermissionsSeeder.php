@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -44,7 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'lapso.eliminar']);
         Permission::firstOrCreate(['name' => 'lapso.ver']);
 
-        //Permisos unidad curricular
+        // Permisos unidad curricular
         Permission::firstOrCreate(['name' => 'unidad Curricular.crear']);
         Permission::firstOrCreate(['name' => 'unidad Curricular.editar']);
         Permission::firstOrCreate(['name' => 'unidad Curricular.eliminar']);
@@ -122,6 +121,33 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'estadistica.editar']);
         Permission::firstOrCreate(['name' => 'estadistica.eliminar']);
         Permission::firstOrCreate(['name' => 'estadistica.ver']);
+
+        // Permisos de Documentos
+        Permission::firstOrCreate(['name' => 'documento.crear']);
+        Permission::firstOrCreate(['name' => 'documento.editar']);
+        Permission::firstOrCreate(['name' => 'documento.eliminar']);
+        Permission::firstOrCreate(['name' => 'documento.ver']);
+
+        // Permisos de Censos Estudiantiles
+        Permission::firstOrCreate(['name' => 'censo.crear']);
+        Permission::firstOrCreate(['name' => 'censo.editar']);
+        Permission::firstOrCreate(['name' => 'censo.eliminar']);
+        Permission::firstOrCreate(['name' => 'censo.ver']);
+
+        // Permisos de Registro PER
+        Permission::firstOrCreate(['name' => 'per.crear']);
+        Permission::firstOrCreate(['name' => 'per.editar']);
+        Permission::firstOrCreate(['name' => 'per.eliminar']);
+        Permission::firstOrCreate(['name' => 'per.ver']);
+
+        // Permisos de Bitácora
+        Permission::firstOrCreate(['name' => 'bitacora.ver']);
+
+        // Permisos de Control de Entregas
+        Permission::firstOrCreate(['name' => 'entrega.crear']);
+        Permission::firstOrCreate(['name' => 'entrega.editar']);
+        Permission::firstOrCreate(['name' => 'entrega.eliminar']);
+        Permission::firstOrCreate(['name' => 'entrega.ver']);
 
         //  Crear rol de super-admin
         $adminRole = Role::firstOrCreate(['name' => 'Administrador']);

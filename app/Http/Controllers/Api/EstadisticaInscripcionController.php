@@ -39,49 +39,59 @@ class EstadisticaInscripcionController extends Controller
      */
     public function index(Request $request)
     {
-        // NOTA: Se quitó 'sede' del with() porque no es una relación de Eloquent
+        $requestedPnfId = $request->filled('pnf_id') ? $request->integer('pnf_id') : null;
+        $pnfId = $this->resolverPnf($request, $requestedPnfId);
+
         $query = EstadisticaInscripcion::with(['unidadCurricular']);
 
         if ($request->filled('lapso_id')) {
             $query->where('lapso_id', $request->lapso_id);
         }
 
-        if ($request->filled('pnf_id')) {
-            $query->where('pnf_id', $request->pnf_id);
+        if ($pnfId) {
+            // El PNF vive en la unidad curricular asociada
+            $query->whereHas('unidadCurricular', fn ($q) => $q->where('unidad_curriculars.pnf_id', $pnfId));
         }
 
-        $secciones = $query->get()->map(function ($reg) {
-            // Calculamos la sede dinámicamente para cada registro usando su código
-            $nombreSede = $this->obtenerNombreSede($reg->seccion);
+        $registros = $query->get();
+
+        $data = $registros->map(function ($reg) {
+            $pnfId = $reg->unidadCurricular?->pnf_id;
 
             return [
                 'id'                   => $reg->id,
                 'codigo'               => $reg->seccion,
                 'nombre'               => "Sección {$reg->seccion}",
-                'sede'                 => $nombreSede,
+                'sede'                 => $this->obtenerNombreSede($reg->seccion),
                 'unidad_curricular'    => $reg->unidadCurricular?->nombre ?? $reg->unidadCurricular?->nombre_uc ?? 'N/A',
                 'trayecto'             => $reg->unidadCurricular?->trayecto ?? 'Trayecto I',
                 'matricula'            => $reg->cantidad_estudiantes,
                 'unidad_curricular_id' => $reg->unidad_curricular_id,
-                'pnf_id'               => $reg->pnf_id,
+                'pnf_id'               => $pnfId,
             ];
         });
 
         return response()->json([
             'success' => true,
-            'data'    => $secciones,
+            'data'    => $data,
         ], 200);
     }
 
     public function importar(EstadisticaInscripcionImportRequest $request)
     {
-
         $confirmar = $request->boolean('confirmar_reemplazo', false);
         $archivo = $request->file('archivo');
 
+        // PNF sobre el que se opera: el del usuario o el elegido por el administrador
+        $requestedPnfId = $request->filled('pnf_id') ? $request->integer('pnf_id') : null;
+        $pnfId = $this->resolverPnf($request, $requestedPnfId);
+
         // 1. Verificar si ya existen registros cargados para este lapso y PNF
-        $existenRegistros = EstadisticaInscripcion::where('lapso_id', $request->input('lapso_id'))
-            ->exists();
+        $query = EstadisticaInscripcion::where('lapso_id', $request->input('lapso_id'));
+        if ($pnfId) {
+            $query->whereHas('unidadCurricular', fn ($q) => $q->where('unidad_curriculars.pnf_id', $pnfId));
+        }
+        $existenRegistros = $query->exists();
 
         if ($existenRegistros && !$confirmar) {
             return response()->json([
@@ -110,12 +120,15 @@ class EstadisticaInscripcionController extends Controller
                 default => ExcelFormat::XLSX,
             };
 
-            EstadisticaInscripcion::where('lapso_id', $request->input('lapso_id'))
-            ->delete();
+            $eliminar = EstadisticaInscripcion::where('lapso_id', $request->input('lapso_id'));
+            if ($pnfId) {
+                $eliminar->whereHas('unidadCurricular', fn ($q) => $q->where('unidad_curriculars.pnf_id', $pnfId));
+            }
+            $eliminar->delete();
 
 
-            // 2. Instanciar la importación pasándole el lapso académico
-            $importador = new EstadisticaInscripcionImport($request->input('lapso_id'));
+            // 2. Instanciar la importación pasándole el lapso académico y el PNF resuelto
+            $importador = new EstadisticaInscripcionImport($request->input('lapso_id'), $pnfId);
 
             // 3. Ejecutar la lectura del Excel
             Excel::import($importador, $request->file('archivo'), null, $tipoLector);
@@ -150,8 +163,12 @@ class EstadisticaInscripcionController extends Controller
     public function fusionarSeccion(FusionarSeccionRequest $request)
     {
         return DB::transaction(function () use ($request) {
-            $origen  = EstadisticaInscripcion::findOrFail($request->seccion_origen_id);
-            $destino = EstadisticaInscripcion::findOrFail($request->seccion_destino_id);
+            $origen  = EstadisticaInscripcion::with('unidadCurricular')->findOrFail($request->seccion_origen_id);
+            $destino = EstadisticaInscripcion::with('unidadCurricular')->findOrFail($request->seccion_destino_id);
+
+            // Validación: el usuario solo puede operar sobre registros de su PNF
+            $this->autorizarRegistro($request, $origen);
+            $this->autorizarRegistro($request, $destino);
 
             // Validación: Pertenecer a la misma materia, lapso y sede
             if (
@@ -274,4 +291,64 @@ class EstadisticaInscripcionController extends Controller
         });
     }
 
+    /**
+     * Indica si el usuario autenticado es administrador.
+     * El administrador no está atado a un PNF: lo elige desde el select del módulo.
+     */
+    private function esAdministrador(Request $request): bool
+    {
+        return (bool) $request->user()?->hasRole('ADMINISTRADOR');
+    }
+
+    /** PNF asignado al usuario autenticado (coordinador/docente). */
+    private function pnfDelUsuario(Request $request): ?int
+    {
+        return $request->user()?->pnf?->id;
+    }
+
+    /**
+     * Resuelve el PNF sobre el que se va a operar.
+     *
+     * - Administrador: usa el pnf_id enviado desde el select del módulo
+     *   (null = sin filtro, es decir, todos los PNF).
+     * - Usuario con PNF asignado: siempre opera sobre su propio PNF; si intenta
+     *   enviar otro pnf_id se rechaza con 403.
+     */
+    private function resolverPnf(Request $request, ?int $requestedPnfId): ?int
+    {
+        if ($this->esAdministrador($request)) {
+            return $requestedPnfId;
+        }
+
+        $pnfUsuario = $this->pnfDelUsuario($request);
+
+        abort_if(! $pnfUsuario, 403, 'Su usuario no tiene un PNF asignado.');
+        abort_if(
+            $requestedPnfId && $requestedPnfId !== $pnfUsuario,
+            403,
+            'No tiene acceso a este PNF.'
+        );
+
+        return $pnfUsuario;
+    }
+
+    /**
+     * Verifica que un registro de estadística pertenezca al PNF permitido.
+     * El PNF se deriva de la unidad curricular asociada.
+     */
+    private function autorizarRegistro(Request $request, EstadisticaInscripcion $registro): void
+    {
+        if ($this->esAdministrador($request)) {
+            return;
+        }
+
+        $pnfUsuario  = $this->pnfDelUsuario($request);
+        $pnfRegistro = $registro->unidadCurricular?->pnf_id;
+
+        abort_if(
+            ! $pnfUsuario || (int) $pnfRegistro !== (int) $pnfUsuario,
+            403,
+            'No tiene acceso a registros de otro PNF.'
+        );
+    }
 }

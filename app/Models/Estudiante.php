@@ -2,19 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Traits\Auditable;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $persona_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Censo> $censos
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Censo> $censos
  * @property-read int|null $censos_count
- * @property-read \App\Models\Persona $persona
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Seccion> $secciones
+ * @property-read Persona $persona
+ * @property-read Collection<int, Seccion> $secciones
  * @property-read int|null $secciones_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Estudiante newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Estudiante newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Estudiante query()
@@ -22,15 +25,17 @@ use App\Traits\Auditable;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Estudiante whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Estudiante wherePersonaId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Estudiante whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Estudiante extends Model
 {
     use Auditable;
+
     protected $table = 'estudiantes';
 
     protected $fillable = [
-        'persona_id'
+        'persona_id',
     ];
 
     /**
@@ -54,6 +59,17 @@ class Estudiante extends Model
             'estudiante_id',
             'seccion_id'
         )->withPivot('estatus')->withTimestamps();
+    }
+
+    /**
+     * Nombre completo del estudiante a partir de su persona.
+     * Usado por la bitácora para resolver `persona_id` a un texto legible.
+     */
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim(
+            ($this->persona->nombre ?? '').' '.($this->persona->apellido ?? '')
+        );
     }
 
     /**

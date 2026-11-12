@@ -192,4 +192,40 @@ class UnidadCurricularController extends Controller
 
         return response()->json($unidades);
     }
+
+    /**
+     * Genera el reporte PDF del catálogo de unidades curriculares.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (para filtrar por coordinador)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+        $pnfId = $pnfUser?->id;
+
+        // 2. Consulta base con relaciones
+        $query = UnidadCurricular::with('trimestres');
+
+        // 3. Filtrar por el PNF del usuario si aplica
+        if ($pnfId && !$user->hasRole('ADMINISTRADOR')) {
+            $query->where('pnf_id', $pnfId);
+        }
+
+        // 4. Filtros opcionales desde el request
+        if ($request->filled('periodo')) {
+            $query->where('periodo', $request->periodo);
+        }
+
+        if ($request->filled('pnf_id')) {
+            $query->where('pnf_id', $request->pnf_id);
+        }
+
+        $unidades = $query->orderBy('nombre')->get();
+
+        // 5. Generar PDF
+        $pdf = Pdf::loadView('pdf.unidad_curricular', compact('unidades', 'pnfUser'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('UNIDADES_CURRICULARES_' . date('Y_m_d_His') . '.pdf');
+    }
 }

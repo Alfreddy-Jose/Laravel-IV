@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\AnoAcademico;
 use App\Http\Requests\StoreAnoAcademicoRequest;
 use App\Http\Requests\UpdateAnoAcademicoRequest;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AnoAcademicoController extends Controller
 {
@@ -218,5 +219,31 @@ class AnoAcademicoController extends Controller
                 'message' => 'Hubo un error interno al intentar eliminar el año académico.'
             ], 500);
         }
+    }
+
+    /**
+     * Genera el reporte PDF del cronograma de años académicos.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (los años académicos son globales, el PNF solo se informa en el título)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+
+        // 2. Consulta base con relaciones
+        $query = AnoAcademico::with(['lapsos.tipoLapso']);
+
+        // 3. Filtro opcional por estado
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $anos = $query->orderByDesc('ano')->get();
+
+        // 4. Generar PDF
+        $pdf = Pdf::loadView('pdf.anos_academicos', compact('anos', 'pnfUser'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('ANOS_ACADEMICOS_' . date('Y_m_d_His') . '.pdf');
     }
 }

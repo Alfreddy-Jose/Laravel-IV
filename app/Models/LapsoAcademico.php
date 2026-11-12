@@ -133,6 +133,35 @@ class LapsoAcademico extends Model
         });
     }
 
+    /**
+     * SCOPE: orden cronológico estable (el más antiguo primero).
+     * Se usa para que frontend y backend resuelvan el "lapso actual" con el
+     * mismo criterio: el primer período vigente es el que se selecciona por
+     * defecto cuando el cliente todavía no ha elegido uno.
+     */
+    public function scopeOrdenCronologico(Builder $query): void
+    {
+        $query->orderBy('fecha_inicio')->orderBy('id');
+    }
+
+    /**
+     * Lapso que el sistema asume como "actual" cuando la petición no trae
+     * contexto (por ejemplo, primer inicio de sesión o localStorage vacío).
+     *
+     * 1. El lapso vigente hoy (scope activos), en orden cronológico.
+     * 2. Si no hay ninguno vigente, el lapso más reciente del año académico
+     *    más reciente (permite operar el panel para activar/crear lapsos).
+     */
+    public static function actual(): ?self
+    {
+        return static::query()->activos()->ordenCronologico()->first()
+            ?? static::query()
+                ->orderByDesc('ano_academico_id')
+                ->orderBy('fecha_inicio')
+                ->orderBy('id')
+                ->first();
+    }
+
     // Método para La relacion con el Año Académico
     public function anoAcademico()
     {

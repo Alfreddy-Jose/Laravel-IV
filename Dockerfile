@@ -41,4 +41,4 @@ COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 EXPOSE 8000
 
 # Ejecuta enlaces, migraciones seguras y levanta SUPERVISOR para controlar ambos procesos
-CMD php artisan config:clear && php artisan cache:clear && php artisan storage:link && php artisan migrate --force && /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+CMD php artisan config:clear && php artisan cache:clear && php artisan storage:link && /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

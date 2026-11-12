@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class EstadisticaInscripcionImportRequest extends FormRequest
 {
@@ -31,6 +32,12 @@ class EstadisticaInscripcionImportRequest extends FormRequest
                 'max:10240', // Máximo 10 MB
             ],
             'confirmar_reemplazo' => ['nullable', 'boolean'],
+            'pnf_id' => [
+                Rule::requiredIf(fn () => ! $this->user()?->pnf),
+                'nullable',
+                'integer',
+                'exists:pnfs,id',
+            ],
         ];
     }
 
@@ -42,6 +49,8 @@ class EstadisticaInscripcionImportRequest extends FormRequest
             'archivo.required'  => 'Debe adjuntar un archivo de inscripción.',
             'archivo.mimes'     => 'El archivo debe ser de formato .xlsx, .xls o .csv.',
             'archivo.max'       => 'El archivo no debe pesar más de 10 MB.',
+            'pnf_id.required'   => 'Debe seleccionar un PNF para asociar el archivo.',
+            'pnf_id.exists'     => 'El PNF seleccionado no existe.',
         ];
     }
 }

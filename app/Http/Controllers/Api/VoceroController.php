@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Vocero;
-use Illuminate\Http\Request;
 use App\Http\Requests\StoreVoceroRequest;
+use App\Models\Vocero;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 
 class VoceroController extends Controller
 {
@@ -22,16 +23,19 @@ class VoceroController extends Controller
         $pnfId = $pnfUser?->id;
 
         $query = Vocero::with([
-            'estudiante.persona:id,cedula_persona,nombre,apellido,email',
+            'estudiante.persona.municipio.estado',
+            'seccion.pnf:id,nombre',
             'seccion.lapso',
-            'seccion.pnf:id,nombre' // Carga Eager para devolver la información del PNF
+            'seccion.sede',
+            'seccion.trayecto',
+            'seccion.matricula',
         ])
         // Filtro condicional por PNF del usuario (vía Sección)
-        ->when($pnfId, function ($q) use ($pnfId) {
-            $q->whereHas('seccion', function ($seccionQuery) use ($pnfId) {
-                $seccionQuery->where('pnf_id', $pnfId);
+            ->when($pnfId, function ($q) use ($pnfId) {
+                $q->whereHas('seccion', function ($seccionQuery) use ($pnfId) {
+                    $seccionQuery->where('pnf_id', $pnfId);
+                });
             });
-        });
 
         // Filtro por lapso académico
         if ($request->filled('lapso_id')) {
@@ -53,7 +57,7 @@ class VoceroController extends Controller
         $voceros = $query->latest()->get();
 
         return response()->json([
-            'data' => $voceros
+            'data' => $voceros,
         ], 200);
     }
 
@@ -65,11 +69,18 @@ class VoceroController extends Controller
         $vocero = Vocero::create($request->validated());
 
         // Cargar relaciones para devolver el objeto completo a la UI
-        $vocero->load(['estudiante.persona', 'seccion.lapso']);
+        $vocero->load([
+            'estudiante.persona.municipio.estado',
+            'seccion.lapso',
+            'seccion.pnf',
+            'seccion.sede',
+            'seccion.trayecto',
+            'seccion.matricula',
+        ]);
 
         return response()->json([
             'message' => 'Vocero designado exitosamente.',
-            'data'    => $vocero
+            'data' => $vocero,
         ], 201);
     }
 
@@ -81,7 +92,55 @@ class VoceroController extends Controller
         $vocero->delete();
 
         return response()->json([
-            'message' => 'Designación de vocero removida correctamente.'
+            'message' => 'Designación de vocero removida correctamente.',
         ], 200);
+    }
+
+    /**
+     * Genera el reporte PDF de los voceros designados.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (para filtrar por coordinador)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+        $pnfId = $pnfUser?->id;
+
+        // 2. Consulta base con relaciones
+        $query = Vocero::with([
+            'estudiante.persona:id,cedula_persona,nombre,apellido,email',
+            'seccion.lapso',
+            'seccion.pnf:id,nombre',
+        ]);
+
+        // 3. Filtrar por el PNF del usuario (vía Sección)
+        if ($pnfId && ! $user->hasRole('ADMINISTRADOR')) {
+            $query->whereHas('seccion', function ($q) use ($pnfId) {
+                $q->where('pnf_id', $pnfId);
+            });
+        }
+
+        // 4. Filtros opcionales desde el request
+        if ($request->filled('lapso_id')) {
+            $query->whereHas('seccion', function ($q) use ($request) {
+                $q->where('lapso_id', $request->lapso_id);
+            });
+        }
+
+        if ($request->filled('seccion_id')) {
+            $query->where('seccion_id', $request->seccion_id);
+        }
+
+        if ($request->filled('tipo_vocero')) {
+            $query->where('tipo_vocero', $request->tipo_vocero);
+        }
+
+        $voceros = $query->latest()->get();
+
+        // 5. Generar PDF
+        $pdf = Pdf::loadView('pdf.voceros', compact('voceros', 'pnfUser'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('VOCEROS_'.date('Y_m_d_His').'.pdf');
     }
 }

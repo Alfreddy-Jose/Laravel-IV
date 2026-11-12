@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Trayecto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TrayectoController extends Controller
 {
@@ -104,5 +105,34 @@ class TrayectoController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Genera el reporte PDF del catálogo de trayectos.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (para filtrar por coordinador)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+        $pnfId = $pnfUser?->id;
+
+        // 2. Consulta base con relaciones
+        $query = Trayecto::with('pnfs:id,nombre');
+
+        // 3. Filtrar por los trayectos asociados al PNF del usuario
+        if ($pnfId && !$user->hasRole('ADMINISTRADOR')) {
+            $query->whereHas('pnfs', function ($q) use ($pnfId) {
+                $q->where('pnfs.id', $pnfId);
+            });
+        }
+
+        $trayectos = $query->orderBy('nombre')->get();
+
+        // 4. Generar PDF
+        $pdf = Pdf::loadView('pdf.trayectos', compact('trayectos', 'pnfUser'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download('TRAYECTOS_' . date('Y_m_d_His') . '.pdf');
     }
 }

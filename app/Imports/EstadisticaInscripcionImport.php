@@ -12,13 +12,15 @@ use App\Models\Sede;
 class EstadisticaInscripcionImport implements ToCollection
 {
     protected int $lapsoId;
+    protected ?int $pnfId;
     protected array $errores = [];
     protected array $seccionesProcesadas = [];
     protected string $trayectoActual = 'Trayecto I';
 
-    public function __construct(int $lapsoId)
+    public function __construct(int $lapsoId, ?int $pnfId = null)
     {
         $this->lapsoId = $lapsoId;
+        $this->pnfId = $pnfId;
     }
 
 
@@ -90,6 +92,7 @@ class EstadisticaInscripcionImport implements ToCollection
                 [
                     'cantidad_estudiantes'            => $matricula,
                     'sede_id'              => $sedeModel?->id,
+                    'pnf_id'                 => $this->pnfId,
                 ]
             );
 

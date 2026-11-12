@@ -37,7 +37,12 @@ class DashboardController extends Controller
         // -------------------------------------------------------------------------
         $lapso = $lapsoIdHeader
             ? LapsoAcademico::with('anoAcademico')->find($lapsoIdHeader)
-            : LapsoAcademico::activos()->with('anoAcademico')->latest('id')->first();
+            : null;
+
+        // Si no hay header (o apunta a un lapso inexistente) se usa el mismo
+        // criterio que el middleware para que el dashboard y el resto de la
+        // API trabajen siempre con el mismo período.
+        $lapso ??= LapsoAcademico::actual()?->load('anoAcademico');
 
         $resumenLapso = null;
 

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Traits\Auditable;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -11,15 +13,16 @@ use App\Traits\Auditable;
  * @property int $persona_id
  * @property int $pnf_id
  * @property int $horas_dedicacion
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\CondicionContrato|null $condicionContrato
- * @property-read \App\Models\Coordinador|null $coordinacionActiva
- * @property-read \App\Models\Coordinador|null $coordinador
- * @property-read \App\Models\Persona $persona
- * @property-read \App\Models\Pnf $pnf
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UnidadCurricular> $unidades_curriculares
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read CondicionContrato|null $condicionContrato
+ * @property-read Coordinador|null $coordinacionActiva
+ * @property-read Coordinador|null $coordinador
+ * @property-read Persona $persona
+ * @property-read Pnf $pnf
+ * @property-read Collection<int, UnidadCurricular> $unidades_curriculares
  * @property-read int|null $unidades_curriculares_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Docente newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Docente newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Docente query()
@@ -30,6 +33,7 @@ use App\Traits\Auditable;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Docente wherePersonaId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Docente wherePnfId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Docente whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Docente extends Model
@@ -72,6 +76,17 @@ class Docente extends Model
         return $this->belongsTo(Pnf::class);
     }
 
+    /**
+     * Nombre completo del docente a partir de su persona.
+     * Usado por la bitácora para resolver `persona_id` a un texto legible.
+     */
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim(
+            ($this->persona->nombre ?? '').' '.($this->persona->apellido ?? '')
+        );
+    }
+
     // Relación con la tabla de Coordinador
     public function coordinador()
     {
@@ -84,7 +99,7 @@ class Docente extends Model
     public function coordinacionActiva()
     {
         return $this->hasOne(Coordinador::class)
-                    ->where('activo', true)
-                    ->whereNull('fecha_fin');
+            ->where('activo', true)
+            ->whereNull('fecha_fin');
     }
 }

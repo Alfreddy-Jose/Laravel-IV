@@ -9,6 +9,7 @@ use App\Models\Coordinador;
 use App\Models\Docente;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CoordinadorController extends Controller
 {
@@ -224,5 +225,45 @@ class CoordinadorController extends Controller
         return response()->json([
             'unidadesCurriculares' => $unidadesCurriculares
         ], 200);
+    }
+
+    /**
+     * Genera el reporte PDF del catálogo de coordinadores.
+     */
+    public function generarPdf(Request $request)
+    {
+        // 1. Usuario autenticado y su PNF (para filtrar por coordinador)
+        $user = auth()->user();
+        $pnfUser = $user?->pnf;
+        $pnfId = $pnfUser?->id;
+
+        // 2. Consulta base con relaciones
+        $query = Coordinador::with([
+            'docente.persona:id,cedula_persona,nombre,apellido',
+            'docente.pnf:id,nombre',
+            'pnf:id,nombre'
+        ]);
+
+        // 3. Filtrar por el PNF del usuario si aplica
+        if ($pnfId && !$user->hasRole('ADMINISTRADOR')) {
+            $query->whereHas('docente', function ($q) use ($pnfId) {
+                $q->where('pnf_id', $pnfId);
+            });
+        }
+
+        // 4. Filtro opcional por estado de la coordinación
+        if ($request->filled('activo')) {
+            $query->where('activo', (bool) $request->activo);
+        }
+
+        $coordinadores = $query->orderByDesc('activo')
+            ->orderByDesc('fecha_inicio')
+            ->get();
+
+        // 5. Generar PDF
+        $pdf = Pdf::loadView('pdf.coordinadores', compact('coordinadores', 'pnfUser'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('COORDINADORES_' . date('Y_m_d_His') . '.pdf');
     }
 }

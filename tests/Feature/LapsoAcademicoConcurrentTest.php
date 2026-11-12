@@ -159,7 +159,7 @@ class LapsoAcademicoConcurrentTest extends TestCase
         $this->actingAs($user);
 
         // Force start lapsoRegular2
-        $response = $this->postJson("/api/lapsos/{$lapsoRegular2->id}/forzar-inicio");
+        $response = $this->postJson("/api/lapso/{$lapsoRegular2->id}/forzar-inicio");
         $response->assertStatus(200);
 
         $lapsoRegular1->refresh();
