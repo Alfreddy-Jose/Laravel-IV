@@ -24,9 +24,10 @@ class SeccionController extends Controller
     {
         $query = Seccion::query();
 
-        // Filtrar por lapso
-        if ($request->lapso) {
-            $query->where('lapso_id', $request->lapso);
+        // Filtrar por lapso (se aceptan `lapso` y el alias `lapso_id`)
+        $lapsoFiltro = $request->filled('lapso') ? $request->lapso : $request->lapso_id;
+        if ($lapsoFiltro) {
+            $query->where('lapso_id', $lapsoFiltro);
         }
         // Filtrar por sede
         if ($request->sede) {

@@ -238,13 +238,23 @@ class PersonaController extends Controller
     // Método para Seleccionar las Secciones
     public function getSecciones(Request $request)
     {
-        // Captura el pnf_id si viene en la petición (ej: /api/secciones?pnf_id=2)
+        // Captura el pnf_id si viene en la petición (ej: /api/persona/get_secciones?pnf_id=2)
         // Si no viene, valdrá null.
         $pnfId = $request->query('pnf_id');
 
+        // Filtro por lapso académico (se acepta `lapso_id` y su alias `lapso`).
+        $lapsoId = $request->query('lapso_id') ?? $request->query('lapso');
+
         // Llamamos al scope 'dePnf'. Puedes usar 'with' si necesitas traer relaciones.
-        $secciones = Seccion::dePnf($pnfId)
-            ->get();
+        $query = Seccion::dePnf($pnfId);
+
+        // Solo se devuelven las secciones del lapso solicitado. Sin el filtro se
+        // conserva el comportamiento previo (todas las secciones).
+        if ($lapsoId) {
+            $query->where('lapso_id', $lapsoId);
+        }
+
+        $secciones = $query->get();
 
         return response()->json($secciones);
     }
