@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Universidad;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Universidad;
 
 class UniversidadSeeder extends Seeder
 {
@@ -19,6 +19,5 @@ class UniversidadSeeder extends Seeder
             'abreviado_univ' => 'UPTYAB',
             'direccion' => 'AV ALBERTO RAVELLCON AV JOSE ANTONIO PAEZ / INDEPENDENCIA / EDO YARACUY',
         ]);
-
     }
 }

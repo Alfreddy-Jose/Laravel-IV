@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Trayecto;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Trayecto;
 
 class TrayectoSeeder extends Seeder
 {

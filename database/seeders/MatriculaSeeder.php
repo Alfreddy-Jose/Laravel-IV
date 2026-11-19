@@ -15,12 +15,12 @@ class MatriculaSeeder extends Seeder
     {
         Matricula::firstOrcreate([
             'numero' => '5',
-            'nombre' => 'Regular'
+            'nombre' => 'REGULAR'
         ]);
 
         Matricula::firstOrcreate([
             'numero' => '8', 
-            'nombre' => 'Prosecución'
+            'nombre' => 'PROSECUCION'
         ]);
     }
 }

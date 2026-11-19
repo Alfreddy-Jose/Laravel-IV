@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Override;
 
 class StoreDocenteRequest extends FormRequest
 {
@@ -20,13 +21,13 @@ class StoreDocenteRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-    public function rules(): array 
+    public function rules(): array
     {
         return [
             "persona_id" => "required|exists:personas,id",
             "pnf_id" => "required|exists:pnfs,id",
             "categoria" => "required|string|max:50",
-            "fecha_inicio" => "required|date",
+            "fecha_inicio" => "required|date|before_or_equal:today",
             "fecha_fin" => "required|date",
             "dedicacion" => "required|string|max:50",
             "tipo" => "required|string|max:50",
@@ -38,6 +39,16 @@ class StoreDocenteRequest extends FormRequest
         return [
             "persona_id" => "buscar persona",
             "pnf_id" => "pnf"
+        ];
+    }
+
+
+    public function messages() :array
+    {
+        return [
+            'fecha_inicio.required' => 'La fecha de inicio es obligatoria',
+            'fecha_inicio.date' => 'La fecha de inicio debe ser una fecha válida',
+            'fecha_inicio.before_or_equal' => 'La fecha de inicio no puede ser una fecha futura',
         ];
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureLapsoIsOpen;
 use App\Http\Middleware\SetLapsoContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // 2. Tus alias de middlewares personalizados
         $middleware->alias([
             'lapso.context' => SetLapsoContext::class,
+            // Bloquea escrituras cuando el lapso resuelto está cerrado
+            'lapso.abierto' => EnsureLapsoIsOpen::class,
             // Middlewares de Spatie para validar permisos en las rutas
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,

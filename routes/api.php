@@ -54,7 +54,8 @@ Route::middleware(['auth:sanctum', 'lapso.context'])->group(function () {
     Route::get('/control_entregas', [ControlEntregaController::class, 'index'])
         ->middleware('permission:entrega.ver');
     Route::post('/control_entregas/toggle', [ControlEntregaController::class, 'store'])
-        ->middleware('permission:entrega.crear|entrega.editar');
+        ->middleware('permission:entrega.crear|entrega.editar')
+        ->middleware('lapso.abierto');
     // configuracion del pnf
     Route::get('/configuracion_pnf/{pnfId}', [ConfiguracionPnfController::class, 'show']);
     Route::post('/configuracion_pnf', [ConfiguracionPnfController::class, 'store']);
@@ -91,13 +92,16 @@ Route::middleware(['auth:sanctum', 'lapso.context'])->group(function () {
 
     // Cargar Excel
     Route::post('/estadistica_inscripcion/importar', [EstadisticaInscripcionController::class, 'importar'])
-        ->middleware('permission:estadistica.crear');
+        ->middleware('permission:estadistica.crear')
+        ->middleware('lapso.abierto');
 
     Route::post('/estadistica_inscripcion/dividir', [EstadisticaInscripcionController::class, 'dividirSeccion'])
-        ->middleware('permission:estadistica.editar');
+        ->middleware('permission:estadistica.editar')
+        ->middleware('lapso.abierto');
 
     Route::post('/estadistica_inscripcion/fusionar', [EstadisticaInscripcionController::class, 'fusionarSeccion'])
-        ->middleware('permission:estadistica.editar');
+        ->middleware('permission:estadistica.editar')
+        ->middleware('lapso.abierto');
 
 });
 
@@ -150,11 +154,16 @@ Route::middleware(['auth:sanctum', 'lapso.context'])->group(function () {
     Route::delete('/pnf/{pnf}', [PnfController::class, 'destroy']);
 
     // Rutas de Documentos por PNF
-    Route::get('/documentos', [DocumentoController::class, 'index']);
-    Route::post('/documentos', [DocumentoController::class, 'store']);
-    Route::get('/documentos/{documento}/descargar', [DocumentoController::class, 'descargar']);
-    Route::get('/documentos/{documento}', [DocumentoController::class, 'show']);
-    Route::delete('/documentos/{documento}', [DocumentoController::class, 'destroy']);
+    Route::get('/documentos', [DocumentoController::class, 'index'])
+        ->middleware('permission:documento.ver');
+    Route::post('/documentos', [DocumentoController::class, 'store'])
+        ->middleware('permission:documento.crear');
+    Route::get('/documentos/{documento}/descargar', [DocumentoController::class, 'descargar'])
+        ->middleware('permission:documento.ver');
+    Route::get('/documentos/{documento}', [DocumentoController::class, 'show'])
+        ->middleware('permission:documento.ver');
+    Route::delete('/documentos/{documento}', [DocumentoController::class, 'destroy'])
+        ->middleware('permission:documento.eliminar');
 
     // --- RUTAS DE SEDES ---
 
@@ -215,20 +224,26 @@ Route::middleware(['auth:sanctum', 'lapso.context'])->group(function () {
 
     // Rutas de Personas
     Route::get('/personas', [PersonaController::class, 'index']);
-    Route::post('/persona', [PersonaController::class, 'store']);
+    Route::post('/persona', [PersonaController::class, 'store'])
+        ->middleware('lapso.abierto');
     Route::get('/persona/get_secciones', [PersonaController::class, 'getSecciones']);
     Route::get('/persona/{persona}', [PersonaController::class, 'show']);
-    Route::put('/persona/{persona}', [PersonaController::class, 'update']);
-    Route::delete('/persona/{persona}', [PersonaController::class, 'destroy']);
+    Route::put('/persona/{persona}', [PersonaController::class, 'update'])
+        ->middleware('lapso.abierto');
+    Route::delete('/persona/{persona}', [PersonaController::class, 'destroy'])
+        ->middleware('lapso.abierto');
 
     // Rutas de Secciones
     Route::get('/secciones', [SeccionController::class, 'index']);
     Route::get('/secciones/pnfs/sede/{sedeId}', [SeccionController::class, 'getPnfs']); // <- obtener pnfs segun sede
-    Route::post('/seccion', [SeccionController::class, 'store']);
+    Route::post('/seccion', [SeccionController::class, 'store'])
+        ->middleware('lapso.abierto');
     Route::get('/seccion/getDataSelect', [SeccionController::class, 'getDataSelect']);
     Route::get('/seccion/{seccion}', [SeccionController::class, 'show']);
-    Route::put('/seccion/{seccion}', [SeccionController::class, 'update']);
-    Route::delete('/seccion/{seccion}', [SeccionController::class, 'destroy']);
+    Route::put('/seccion/{seccion}', [SeccionController::class, 'update'])
+        ->middleware('lapso.abierto');
+    Route::delete('/seccion/{seccion}', [SeccionController::class, 'destroy'])
+        ->middleware('lapso.abierto');
 
     // === RUTAS PDF ===
     // Se declaran antes de las rutas con parámetro dinámico (ej: /unidad_curricular/{id})
@@ -260,17 +275,22 @@ Route::middleware(['auth:sanctum', 'lapso.context'])->group(function () {
     Route::get('/docentes', [DocenteController::class, 'index']);
     Route::get('/docente/getDataSelect', [DocenteController::class, 'getDataSelect']);
     Route::get('/docente/{docente}', [DocenteController::class, 'show']);
-    Route::post('/docente', [DocenteController::class, 'store']);
-    Route::put('/docente/{docente}', [DocenteController::class, 'update']);
-    Route::delete('/docente/{docente}', [DocenteController::class, 'destroy']);
+    Route::post('/docente', [DocenteController::class, 'store'])
+        ->middleware('lapso.abierto');
+    Route::put('/docente/{docente}', [DocenteController::class, 'update'])
+        ->middleware('lapso.abierto');
+    Route::delete('/docente/{docente}', [DocenteController::class, 'destroy'])
+        ->middleware('lapso.abierto');
 
     // Rutas para Coordinadores
     Route::get('/coordinadores', [CoordinadorController::class, 'index']);
     Route::get('/coordinador/getDocentes/{boolean}', [CoordinadorController::class, 'getDocentes']);
     // Route::get('/coordinador/{coordinador}', [CoordinadorController::class, 'show']);
-    Route::post('/coordinador', [CoordinadorController::class, 'store']);
+    Route::post('/coordinador', [CoordinadorController::class, 'store'])
+        ->middleware('lapso.abierto');
     // Route::put('/coordinador/{coordinador}', [CoordinadorController::class, 'update']);
-    Route::delete('/coordinador/{coordinador}', [CoordinadorController::class, 'destroy']);
+    Route::delete('/coordinador/{coordinador}', [CoordinadorController::class, 'destroy'])
+        ->middleware('lapso.abierto');
 
     // Rutas de Tipo de Documento
     Route::post('/documento', [TipoDocumentoController::class, 'store']);
@@ -284,13 +304,16 @@ Route::middleware(['auth:sanctum', 'lapso.context'])->group(function () {
     Route::get('/censo', [CensoController::class, 'index'])
         ->name('censo.index')->middleware('permission:censo.ver');
     Route::post('/censo', [CensoController::class, 'store'])
-        ->name('censo.store')->middleware('permission:censo.crear');
+        ->name('censo.store')->middleware('permission:censo.crear')
+        ->middleware('lapso.abierto');
     Route::get('/censo/{censo}', [CensoController::class, 'show'])
         ->name('censo.show')->middleware('permission:censo.ver');
     Route::match(['put', 'patch'], '/censo/{censo}', [CensoController::class, 'update'])
-        ->name('censo.update')->middleware('permission:censo.editar');
+        ->name('censo.update')->middleware('permission:censo.editar')
+        ->middleware('lapso.abierto');
     Route::delete('/censo/{censo}', [CensoController::class, 'destroy'])
-        ->name('censo.destroy')->middleware('permission:censo.eliminar');
+        ->name('censo.destroy')->middleware('permission:censo.eliminar')
+        ->middleware('lapso.abierto');
     // Para coincidir con getAllCensos que apunta a '/censos'
     Route::get('/censos', [CensoController::class, 'index'])
         ->middleware('permission:censo.ver');
@@ -301,30 +324,38 @@ Route::middleware(['auth:sanctum', 'lapso.context'])->group(function () {
 
     // CRUD Principal de Voceros
     Route::get('/voceros', [VoceroController::class, 'index']);
-    Route::post('/vocero', [VoceroController::class, 'store']);
+    Route::post('/vocero', [VoceroController::class, 'store'])
+        ->middleware('lapso.abierto');
     Route::get('/vocero/{vocero}', [VoceroController::class, 'show']);
-    Route::put('/vocero/{vocero}', [VoceroController::class, 'update']);
-    Route::delete('/vocero/{vocero}', [VoceroController::class, 'destroy']);
+    Route::put('/vocero/{vocero}', [VoceroController::class, 'update'])
+        ->middleware('lapso.abierto');
+    Route::delete('/vocero/{vocero}', [VoceroController::class, 'destroy'])
+        ->middleware('lapso.abierto');
 
     // CRUD de Bienes (Ficha Estática) con permisos por acción
     Route::get('/bienes', [BienController::class, 'index'])
         ->name('bienes.index')->middleware('permission:inventario.ver');
     Route::post('/bienes', [BienController::class, 'store'])
-        ->name('bienes.store')->middleware('permission:inventario.crear');
+        ->name('bienes.store')->middleware('permission:inventario.crear')
+        ->middleware('lapso.abierto');
     Route::get('/bienes/{bien}', [BienController::class, 'show'])
         ->name('bienes.show')->middleware('permission:inventario.ver');
     Route::match(['put', 'patch'], '/bienes/{bien}', [BienController::class, 'update'])
-        ->name('bienes.update')->middleware('permission:inventario.editar');
+        ->name('bienes.update')->middleware('permission:inventario.editar')
+        ->middleware('lapso.abierto');
     Route::delete('/bienes/{bien}', [BienController::class, 'destroy'])
-        ->name('bienes.destroy')->middleware('permission:inventario.eliminar');
+        ->name('bienes.destroy')->middleware('permission:inventario.eliminar')
+        ->middleware('lapso.abierto');
 
     // Control de Inventario por Lapso
     Route::get('inventario/lapso/{lapsoId}', [ReporteEstadoController::class, 'indexByLapso'])
         ->middleware('permission:inventario.ver');
     Route::post('inventario/reporte', [ReporteEstadoController::class, 'storeOrUpdate'])
-        ->middleware('permission:inventario.editar');
+        ->middleware('permission:inventario.editar')
+        ->middleware('lapso.abierto');
     Route::post('inventario/reporte-masivo', [ReporteEstadoController::class, 'storeBatch'])
-        ->middleware('permission:inventario.editar');
+        ->middleware('permission:inventario.editar')
+        ->middleware('lapso.abierto');
     Route::get('/inventario/pdf', [BienController::class, 'generarPdf'])
         ->middleware('permission:inventario.ver');
 
@@ -349,13 +380,16 @@ Route::middleware(['auth:sanctum', 'lapso.context'])->group(function () {
         Route::get('/getUnidadesCurricularesPorDocente/{docenteId}', [RegistroPerController::class, 'getUnidadesCurricularesPorDocente'])
             ->middleware('permission:per.ver|per.crear|per.editar');
         Route::post('/', [RegistroPerController::class, 'store'])
-            ->middleware('permission:per.crear');
+            ->middleware('permission:per.crear')
+            ->middleware('lapso.abierto');
         Route::get('/{id}', [RegistroPerController::class, 'show'])
             ->middleware('permission:per.ver');
         Route::put('/{id}', [RegistroPerController::class, 'update'])
-            ->middleware('permission:per.editar');
+            ->middleware('permission:per.editar')
+            ->middleware('lapso.abierto');
         Route::delete('/{id}', [RegistroPerController::class, 'destroy'])
-            ->middleware('permission:per.eliminar');
+            ->middleware('permission:per.eliminar')
+            ->middleware('lapso.abierto');
 
     });
 });

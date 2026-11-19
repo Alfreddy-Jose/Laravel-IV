@@ -66,8 +66,12 @@ class SeccionesOrigenSheet implements FromView, WithTitle, ShouldAutoSize, WithD
             $sede = $detalle['sede_nombre'] ?? 'CENTRAL';
 
             if (!isset($agrupado[$tNum])) {
+                $nombreTrayecto = $nombresTrayecto[$tNum] ?? $tNum;
+
                 $agrupado[$tNum] = [
-                    'nombre_trayecto' => $nombresTrayecto[$tNum] ?? $tNum,
+                    'nombre_trayecto' => $nombreTrayecto,
+                    // El PIU solo maneja una columna de estudiantes (sin multiplicar por 5)
+                    'es_piu' => $this->esTrayectoPiu($tNum, $nombreTrayecto),
                     'sedes' => []
                 ];
             }
@@ -105,5 +109,19 @@ class SeccionesOrigenSheet implements FromView, WithTitle, ShouldAutoSize, WithD
             'trayectos' => $agrupado,
             'anoOrigenHistorico' => $this->anoOrigenHistorico,
         ]);
+    }
+
+    /**
+     * Determina si el trayecto corresponde al PIU (Trayecto 0).
+     */
+    protected function esTrayectoPiu(string $clave, string $nombre): bool
+    {
+        $claveNormalizada  = mb_strtoupper(trim($clave));
+        $nombreNormalizado = mb_strtoupper(trim((string) $nombre));
+
+        return $claveNormalizada === '0'
+            || $nombreNormalizado === 'PIU'
+            || $nombreNormalizado === '0'
+            || $nombreNormalizado === 'CERO';
     }
 }

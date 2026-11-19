@@ -39,7 +39,7 @@ class StoreRegistroPerRequest extends FormRequest
                 },
             ],
             'docente_id' => 'required|exists:docentes,id',
-            'calificacion' => 'required|numeric|min:0|max:100',
+            'calificacion' => 'required|numeric|min:26|max:55',
         ];
     }
 }

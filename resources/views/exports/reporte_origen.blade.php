@@ -15,16 +15,28 @@
 
     <!-- Iteramos sobre los Trayectos (Ya ordenados: PIU, luego I, II...) -->
     @foreach($trayectos as $tNum => $trayecto)
+        @php
+            // El PIU (Trayecto 0) solo muestra una columna de estudiantes
+            $esPiu = !empty($trayecto['es_piu']);
+        @endphp
         <!-- CABECERAS: Se imprimen de nuevo por cada trayecto -->
         <tr>
             <th></th> <!-- Col A: Spacer -->
             <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">SEDE</th>
             <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">TRAYECTO</th>
             <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">SECCION</th>
-            <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">GRUPOS APROB.</th>
-            <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">NRO. ESTUD.</th>
-            <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">GRUPOS REPROB.</th>
-            <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">NRO. ESTUD.</th>
+            @if($esPiu)
+                <!-- PIU: una sola columna con la cantidad de estudiantes (sin multiplicar por 5) -->
+                <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #C6E0B4; border: 1px solid #000000; text-align: center; vertical-align: middle;">NRO.ESTUD.</th>
+                <th style="border: 1px solid #000000;"></th>
+                <th style="border: 1px solid #000000;"></th>
+                <th style="border: 1px solid #000000;"></th>
+            @else
+                <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">GRUPOS APROB.</th>
+                <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">NRO. ESTUD.</th>
+                <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">GRUPOS REPROB.</th>
+                <th style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #B4C6E7; border: 1px solid #000000; text-align: center; vertical-align: middle;">NRO. ESTUD.</th>
+            @endif
         </tr>
 
         <!-- Iteramos sobre las sedes de ese trayecto -->
@@ -46,10 +58,18 @@
 
                     <!-- DATOS REGULARES DE LA SECCIÓN (Calculados x5 en el Backend) -->
                     <td style="font-family: 'Calibri', sans-serif; font-size: 11px; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['seccion'] }}</td>
-                    <td style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #00B050; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['g_aprob'] }}</td>
-                    <td style="font-family: 'Calibri', sans-serif; font-size: 11px; background-color: #C6E0B4; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['e_aprob'] }}</td>
-                    <td style="font-family: 'Calibri', sans-serif; font-size: 11px; background-color: #D9E1F2; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['g_reprob'] }}</td>
-                    <td style="font-family: 'Calibri', sans-serif; font-size: 11px; background-color: #FCE4D6; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['e_reprob'] }}</td>
+                    @if($esPiu)
+                        <!-- PIU: se muestra únicamente la cantidad de estudiantes, sin multiplicar por 5 -->
+                        <td style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #C6E0B4; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['g_aprob'] }}</td>
+                        <td style="border: 1px solid #000000;"></td>
+                        <td style="border: 1px solid #000000;"></td>
+                        <td style="border: 1px solid #000000;"></td>
+                    @else
+                        <td style="font-family: 'Calibri', sans-serif; font-size: 11px; font-weight: bold; background-color: #00B050; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['g_aprob'] }}</td>
+                        <td style="font-family: 'Calibri', sans-serif; font-size: 11px; background-color: #C6E0B4; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['e_aprob'] }}</td>
+                        <td style="font-family: 'Calibri', sans-serif; font-size: 11px; background-color: #D9E1F2; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['g_reprob'] }}</td>
+                        <td style="font-family: 'Calibri', sans-serif; font-size: 11px; background-color: #FCE4D6; border: 1px solid #000000; text-align: center; vertical-align: middle;">{{ $sec['e_reprob'] }}</td>
+                    @endif
                 </tr>
             @endforeach
         @endforeach

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Sede;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Sede;
 
 class SedeSeeder extends Seeder
 {
@@ -13,31 +13,31 @@ class SedeSeeder extends Seeder
      */
     public function run(): void
     {
-        $sede1 = Sede::firstOrCreate([
+        $sede1 = Sede::firstOrcreate([
             'nro_sede' => '500',
-            'nombre_sede' => 'Sede Central',
+            'nombre_sede' => 'SEDE CENTRAL',
             'nombre_abreviado' => 'IDN',
-            'direccion' => 'Av Ravell',
+            'direccion' => 'AV RAVELL',
             'municipio_id' => '409',
             'universidad_id' => '1',
         ]);
         $sede1->pnfs()->sync([1, 2, 3]);
 
-        $sede2 = Sede::firstOrCreate([ 
+        $sede2 = Sede::firstOrcreate([ 
             'nro_sede' => '100',
-            'nombre_sede' => 'Sede Peña',
+            'nombre_sede' => 'SEDE PEÑA',
             'nombre_abreviado' => 'PEÑ',
-            'direccion' => 'Independencia',
+            'direccion' => 'INDEPENDENCIA',
             'municipio_id' => '414',
             'universidad_id' => '1',
         ]);
         $sede2->pnfs()->sync([1, 2, 3]);
 
-        $sede4 = Sede::firstOrCreate([
+        $sede4 = Sede::firstOrcreate([
             'nro_sede' => '300',
-            'nombre_sede' => 'Sede Bruzual',
+            'nombre_sede' => 'SEDE BRUZUAL',
             'nombre_abreviado' => 'BRU',
-            'direccion' => 'Av -----Yaritagua',
+            'direccion' => 'AV -----YARITAGUA',
             'municipio_id' => '413',
             'universidad_id' => '1',
         ]); 
